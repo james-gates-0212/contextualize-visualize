@@ -92,7 +92,8 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
   // #region Data
   private _data: IScatterPlotData<IScatterPoint2d>;
   private _layout: IScatterPlotLayout;
-
+  private _axisLabel: string;
+  
   private scaleX: d3.ScaleLinear<number, number>;
   private scaleY: d3.ScaleLinear<number, number>;
   private scaleColor:
@@ -102,14 +103,16 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
 
   /**
    * Constructs a new scatter plot.
+   * @param axisLabel Label to be added in axises(X, Y). Optional.
    * @param data Data to be plotted. Optional.
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
   public constructor(
+    axisLabel?: string,
     data?: IScatterPlotData<IScatterPoint2d>,
     layout?: IScatterPlotLayout,
-    container?: HTMLElement
+    container?: HTMLElement,
   ) {
     super();
 
@@ -117,6 +120,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
     this._data = data ?? { data: [] };
     this._layout = layout ?? {};
     this._container = container;
+    this._axisLabel = axisLabel ?? "";
 
     // Initialize the scales.
     this.scaleX = d3.scaleLinear();
@@ -132,6 +136,8 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
         const scaleYZoom = transform.rescaleY(this.scaleY);
         this.xAxis(this.xAxisSel, scaleXZoom);
         this.yAxis(this.yAxisSel, scaleYZoom);
+        this.xAxisGrid(this.xAxisSel, scaleXZoom);
+        this.yAxisGrid(this.yAxisSel, scaleYZoom);
 
         this.zoomSel?.attr("transform", transform.toString());
       });
@@ -178,17 +184,34 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
       const scaleYZoom = transform.rescaleY(this.scaleY);
       this.xAxis(this.xAxisSel, scaleXZoom);
       this.yAxis(this.yAxisSel, scaleYZoom);
+      this.xAxisGrid(this.xAxisSel, scaleXZoom);
+      this.yAxisGrid(this.yAxisSel, scaleYZoom);
     }
   }
   /** Initializes the elements for the scatter plot. */
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
-      const { svg } = createSvg(this.container, this.layout);
+      const { svg, size, margin } = createSvg(this.container, this.layout);
       this.svgSel = svg;
       this.svgSel.on("click", (event) => {
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
+
+      // Add x axis label
+      this.svgSel.append("text")      
+        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
+        .attr("y", size.height)
+        .attr("text-anchor", "middle")
+        .text(this._axisLabel);
+
+      // Add y axis label
+      this.svgSel.append("text")      
+        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
+        .attr("y", margin.right)
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .text(this._axisLabel);
 
       // Setup the zoom behavior.
       this.zoomSel = this.svgSel.append("g");
@@ -217,6 +240,21 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
     const { margin } = createSvg(undefined, this.layout);
     g?.attr("transform", `translate(${margin.left}, 0)`).call(
       d3.axisLeft(scale)
+    );
+  }
+
+  /** Creates an x-axis grid for the plot. */
+  private xAxisGrid(g: typeof this.xAxisSel, scale: typeof this.scaleX) {
+    const { size, margin } = createSvg(undefined, this.layout);
+    g?.attr('opacity', '0.5').attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
+      d3.axisBottom(scale).tickSize(-(size.height-margin.top-margin.bottom))
+    );
+  }
+  /** Creates an y-axis grid for the plot. */
+  private yAxisGrid(g: typeof this.yAxisSel, scale: typeof this.scaleY) {
+    const { size, margin } = createSvg(undefined, this.layout);
+    g?.attr('opacity', '0.5').attr("transform", `translate(${margin.left}, 0)`).call(
+      d3.axisLeft(scale).tickSize(-(size.width-margin.left-margin.right))
     );
   }
 

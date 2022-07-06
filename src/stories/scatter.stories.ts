@@ -12,6 +12,7 @@ interface IScatterPlot {
   data?: IScatterPlotData<IScatterPoint2d>;
   /** The layout to use for the scatter plot. */
   layout: IScatterPlotLayout;
+  axisLabel?: string;
 }
 
 export default {
@@ -25,8 +26,8 @@ const Template: Story<IScatterPlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the scatter plot.
-  const { data, layout } = args;
-  const plot = new ScatterPlot2d(data, layout, container);
+  const { axisLabel, data, layout } = args;
+  const plot = new ScatterPlot2d(axisLabel, data, layout, container);
   plot.render();
 
   return container;
@@ -45,6 +46,7 @@ SimpleScatter.args = {
       { id: "6", x: +3, y: 9 },
     ],
   },
+  axisLabel: "Simple Scatter",
 };
 
 export const RandomScatter = Template.bind({});
@@ -60,6 +62,7 @@ RandomScatter.args = {
   data: {
     data,
   },
+  axisLabel: "Random Scatter",
 };
 
 export const ColormapScatter = Template.bind({});
@@ -77,6 +80,7 @@ ColormapScatter.args = {
     data,
     colormap: "inferno",
   },
+  axisLabel: "Colormap Scatter",
 };
 
 export const DifferentRadiiScatter = Template.bind({});
@@ -99,4 +103,5 @@ DifferentRadiiScatter.args = {
     data,
     colormap: "inferno",
   },
+  axisLabel: "Different Scatter",
 };
