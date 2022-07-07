@@ -1,3 +1,4 @@
+
 import * as d3 from "d3";
 import * as three from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -191,26 +192,12 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
       const { svg, size, margin } = createSvg(this.container, this.layout);
       const axisX = this.layout.axes?.x ?? {};
       const axisY = this.layout.axes?.y ?? {};
+      const axisLabelColor = this.layout.style?.color ?? "";
 
       this.svgSel = svg;
       this.svgSel.on("click", (event) => {
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
-
-      // Add x axis label
-      this.svgSel.append("text")      
-        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
-        .attr("y", size.height)
-        .attr("text-anchor", "middle")
-        .text(<string> axisX.label);
-
-      // Add y axis label
-      this.svgSel.append("text")      
-        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
-        .attr("y", margin.right)
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .text(<string> axisY.label);
 
       // Setup the zoom behavior.
       this.zoomSel = this.svgSel.append("g");
@@ -224,6 +211,23 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
 
       // Create the scatter plot elements.
       this.pointsSel = this.zoomSel.append("g").selectAll("circle");
+
+      // Add x axis label
+      this.svgSel.append("text")      
+        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
+        .attr("y", size.height-5)
+        .attr("text-anchor", "middle")
+        .attr("fill", axisLabelColor)
+        .text(<string> axisX.label);
+
+      // Add y axis label
+      this.svgSel.append("text")      
+        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
+        .attr("y", margin.right)
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("fill", axisLabelColor)
+        .text(<string> axisY.label);
     }
   }
 

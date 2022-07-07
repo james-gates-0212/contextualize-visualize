@@ -110,6 +110,9 @@ ColormapScatter.args = {
       y: {
         label: "Colormap Scatter-Y"
       }
+    },
+    style: {
+      color: "red"
     }
   },
 };
@@ -137,11 +140,14 @@ DifferentRadiiScatter.args = {
   layout: {
     axes: {
       x: {
-        label: "Different Radi Scatter-X"
+        label: "Different Radii Scatter-X"
       },
       y: {
-        label: "Different Radi Scatter-Y"
+        label: "Different Radii Scatter-Y"
       }
+    },
+    style: {
+      color: "green"
     }
   },
 };
