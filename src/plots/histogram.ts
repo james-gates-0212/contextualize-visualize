@@ -103,7 +103,9 @@ const HistogramPlot = (container: HTMLElement, plot: IPlot<IHistogramData>) => {
     .join("rect")
     // TODO: Abstract spacing.
     .attr("x", (d) => scaleValues(d.min) + 1)
-    .attr("width", (d) => Math.max(0, scaleValues(d.max) - scaleValues(d.min) - 1))
+    .attr("width", (d) =>
+      Math.max(0, scaleValues(d.max) - scaleValues(d.min) - 1)
+    )
     .attr("y", (d) => scaleFreq(d.frequency))
     .attr("height", (d) => scaleFreq(0) - scaleFreq(d.frequency))
     .attr("fill", plot.color ?? "#000");

@@ -13,7 +13,7 @@ type Selection<
   Datum = unknown,
   PElement extends d3.BaseType = null,
   PDatum = undefined
-  > = d3.Selection<GElement, Datum, PElement, PDatum>;
+> = d3.Selection<GElement, Datum, PElement, PDatum>;
 
 /** The type of datum for each scatter plot point. */
 interface IScatterPoint {
@@ -60,7 +60,7 @@ interface IScatterPlotData<TDatum extends IScatterPoint = IScatterPoint> {
   colormap?: string;
 }
 /** Represents the layout information for the plot. */
-interface IScatterPlotLayout extends IPlotLayout<"scatter"> { }
+interface IScatterPlotLayout extends IPlotLayout<"scatter"> {}
 /** The events that may be emitted from a scatter plot. */
 interface IScatterPlotEvents {
   /** An event listener that is called when a point is called exactly once (does not fire on double click). */
@@ -249,7 +249,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
         d3.zoomIdentity
           .scale(
             (1 + padding) *
-            Math.max((xMax - xMin) / width, (yMax - yMin) / height)
+              Math.max((xMax - xMin) / width, (yMax - yMin) / height)
           )
           .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
       );
