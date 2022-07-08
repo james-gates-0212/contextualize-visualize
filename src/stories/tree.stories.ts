@@ -4,6 +4,7 @@ import {
   TreePlot,
   ITreePlotData,
   ITreePlotLayout,
+  ETreeTypes,
 } from "plots";
 import "./plots.css";
 
@@ -12,12 +13,13 @@ interface ITreePlot {
   data?: ITreePlotData;
   /** The layout to use for the graph plot. */
   layout?: ITreePlotLayout;
+  /** The view type for the graph plot. */
+  type: ETreeTypes;
 }
 
 export default {
   title: "Plots/Tree",
-  argTypes: {
-  },
+  type: ETreeTypes.Vertical,
 } as Meta<ITreePlot>;
 
 const Template: Story<ITreePlot> = (args) => {
@@ -27,70 +29,78 @@ const Template: Story<ITreePlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the graph plot.
-  const { data, layout } = args;
-  const plot = new TreePlot(data, layout, container);
+  const { data, layout, type } = args;
+  const plot = new TreePlot(data, layout, container, type);
   plot.render();
 
   return container;
 };
 
+const treeSampleData = {
+  label: "Root",
+  children: [
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+export const Horizontal = Template.bind({});
+Horizontal.args = {
+  data: treeSampleData,
+  type: ETreeTypes.Horizontal,
+};
+
 export const Vertical = Template.bind({});
 Vertical.args = {
-  data: {
-    label: "Root",
-    children: [
-      {
-        label: "Level 1",
-        children: [
-          {
-            label: "Level 2",
-            children: [
-              {
-                label: "Level 3",
-                children: [
-                  {
-                    label: "Level 4",
-                    children: [
-                      {
-                        label: "Level 5",
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                label: "Level 3",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        label: "Level 1",
-        children: [
-          {
-            label: "Level 2",
-            children: [
-              {
-                label: "Level 3",
-                children: [
-                  {
-                    label: "Level 4",
-                    children: [
-                      {
-                        label: "Level 5",
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                label: "Level 3",
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
+  data: treeSampleData,
 };

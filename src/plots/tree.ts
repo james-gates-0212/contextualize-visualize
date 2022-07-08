@@ -84,6 +84,13 @@ interface ITreePlotEvents {
   clickSpace: () => void;
 }
 
+/** The types for the tree. */
+export enum ETreeTypes {
+  Vertical = 0,
+  Horizontal = 1,
+  Radial = 2,
+};
+
 // TODO: Consider using WebCoLa to improve the performance of the visualization.
 // TODO: Make sure to add definitions to the SVG for optimal performance.
 /**
@@ -113,6 +120,15 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   private _root: ITreeVertex = {} as ITreeVertex;
   private _nodes: ITreeVertex[] = [];
   private _links: ITreeEdge[] = [];
+  private _type: ETreeTypes;
+  private _fnLinks = [
+      d3.linkVertical<ITreeEdge, Number[]>()
+        .source(d => [d.source.x, d.source.y])
+        .target(d => [d.target.x, d.target.y]),
+      d3.linkHorizontal<ITreeEdge, Number[]>()
+        .source(d => [d.source.x, d.source.y])
+        .target(d => [d.target.x, d.target.y]),
+  ];
   // #endregion
 
   /**
@@ -124,7 +140,8 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   public constructor(
     data?: ITreePlotData,
     layout?: ITreePlotLayout,
-    container?: HTMLElement
+    container?: HTMLElement,
+    type: ETreeTypes = ETreeTypes.Vertical,
   ) {
     super();
 
@@ -132,6 +149,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     this._data = data ?? {} as ITreePlotData;
     this._layout = layout ?? {};
     this._container = container;
+    this._type = type;
 
     // Initialize the extensions.
     this.zoomExt = d3
@@ -146,6 +164,16 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     this.setupElements();
   }
 
+  private convert<Datum>(value: Datum): Datum {
+    if (this._type === ETreeTypes.Horizontal) {
+      if (Array.isArray(value)) {
+        value.reverse();
+        return value;
+      }
+    }
+    return value;
+  }
+
   /** Initializes the elements for the graph plot. */
   private setupElements() {
     if (this.container) {
@@ -157,16 +185,15 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       const padding = 50;
 
       // Compute the layout.
-      d3.tree().size([size.width - padding * 2, size.height - padding * 2])(this._root);
+      d3.tree().size(this.convert([size.width - padding * 2, size.height - padding * 2]))(this._root);
 
-      // Center the tree.
-      let x0 = Infinity;
-      let x1 = -x0;
-      this._root.each(d => {
-        if (d.x > x1) x1 = d.x;
-        if (d.x < x0) x0 = d.x;
-      });
-
+      if (this._type === ETreeTypes.Horizontal) {
+        this._root.each(node => {
+          const t = node.x;
+          node.x = node.y;
+          node.y = t;
+        });
+      }
       this._nodes = this._root.descendants();
       this._links = this._root.links() as ITreeEdge[];
 
@@ -404,9 +431,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .attr("stroke-opacity", 0.6)
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 1)
       .attr("marker-end", ({ directed }) => (directed ? "url(#arrow)" : null))
-      .attr("d", d3.linkVertical<ITreeEdge, Number[]>()
-        .source(d => [d.source.x, d.source.y])
-        .target(d => [d.target.x, d.target.y]));
+      .attr("d", this._fnLinks[this._type]);
 
     this.nodeSel = this.nodeSel?.data(this._nodes)
       .join("circle")
