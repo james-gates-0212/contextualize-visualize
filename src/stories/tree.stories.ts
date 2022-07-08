@@ -94,13 +94,13 @@ const treeSampleData = {
   ],
 };
 
-export const Horizontal = Template.bind({});
-Horizontal.args = {
+export const HorizontalTree = Template.bind({});
+HorizontalTree.args = {
   data: treeSampleData,
   type: ETreeTypes.Horizontal,
 };
 
-export const Vertical = Template.bind({});
-Vertical.args = {
+export const VerticalTree = Template.bind({});
+VerticalTree.args = {
   data: treeSampleData,
 };
