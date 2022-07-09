@@ -128,7 +128,11 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       d3.linkHorizontal<ITreeEdge, Number[]>()
         .source(d => [d.source.x, d.source.y])
         .target(d => [d.target.x, d.target.y]),
+      d3.linkRadial<ITreeEdge, ITreeVertex>()
+        .angle(d => d.x)
+        .radius(d => d.y),
   ];
+  private _defaultRadius = 15;
   // #endregion
 
   /**
@@ -174,6 +178,18 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     return value;
   }
 
+  private isRadial() {
+    return this._type === ETreeTypes.Radial;
+  }
+
+  private isVertical() {
+    return this._type === ETreeTypes.Vertical;
+  }
+
+  private isHorizontal() {
+    return this._type === ETreeTypes.Horizontal;
+  }
+
   /** Initializes the elements for the graph plot. */
   private setupElements() {
     if (this.container) {
@@ -182,57 +198,54 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
       this._root = d3.hierarchy(this._data, d => d.children) as ITreeVertex;
 
-      const padding = 50;
+      const radius = Math.min(size.width, size.height) * 3 / 2.1;
 
       // Compute the layout.
-      d3.tree().size(this.convert([size.width - padding * 2, size.height - padding * 2]))(this._root);
+      if (this.isRadial()) {
+        d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(this._root);
+      } else {
+        d3.tree().size(this.convert([size.width * 2, size.height * 2]))(this._root);
+      }
 
-      if (this._type === ETreeTypes.Horizontal) {
+      if (this.isHorizontal()) {
         this._root.each(node => {
           const t = node.x;
           node.x = node.y;
           node.y = t;
         });
       }
+
       this._nodes = this._root.descendants();
+      if (this.isRadial()) {
+        this._nodes.reverse();
+      }
+
       this._links = this._root.links() as ITreeEdge[];
 
-      this.svgSel = svg.attr("viewBox", [-padding, -padding, size.width, size.height]);
+      this.svgSel = svg.attr("viewBox", [0, 0, size.width, size.height]).style("box-sizing", "border-box");
       this.svgSel.on("click", (event) => {
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
-      // Add a definition for the arrow markers for directed edges.
-      const defsSel = this.svgSel.append("defs");
-      defsSel
-        .append("marker")
-        .attr("id", "arrow")
-        .attr("viewBox", "0 -5 20 10")
-        .attr("refX", 50)
-        .attr("refY", 0)
-        .attr("markerWidth", 10)
-        .attr("markerHeight", 10)
-        .attr("orient", "auto")
-        .append("path")
-        .attr("fill", "#999")
-        .attr("d", "M0,-10L20,0L0,10");
-      defsSel
-        .append("path")
-        .attr("id", "pointer")
-        .attr("viewBox", "-5 -5 10 10")
-        .attr("d", "M-3-7.5 4.5 0-3 7.5-4.5 7.5-4.5 4.5 0 0-4.5-4.5-4.5-7.5")
-        .attr("opacity", 0.4);
-
       // Setup the zoom behavior.
       // Notice we disable the double click zoom behavior because we allow double click to be used to
       // expand/collapse nodes.
-      this.zoomSel = this.svgSel.append("g");
+      const g = this.zoomSel = this.svgSel.append("g");
+
       this.svgSel
         .call(this.zoomExt)
         .call(this.zoomExt.transform, d3.zoomIdentity);
 
+      d3.transition()
+        .duration(0)
+        .ease(d3.easeLinear)
+        .on("end", function() {
+            const box = (g.node() as SVGAElement).getBBox();
+            svg.attr("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+        });
+
       // Setup all of the data-related elements.
-      this.linkSel = this.zoomSel.append("g").selectAll("line");
+      this.linkSel = this.zoomSel.append("g").selectAll("path");
       this.nodeSel = this.zoomSel
         .append("g")
         .style("cursor", "pointer")
@@ -283,7 +296,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
         .attr("x", ({ x }) => x || 0)
         .attr(
           "y",
-          ({ style, y }) => (y || 0) + calcOffset(style?.fillRadius ?? 15)
+          ({ style, y }) => (y || 0) + calcOffset(style?.fillRadius ?? this._defaultRadius)
         );
     }
 
@@ -299,7 +312,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
           if (v.x === undefined || v.y === undefined) return null;
           const sx = x + k * v.x;
           const sy = y + k * v.y;
-          const r = v.style?.fillRadius ?? 15;
+          const r = v.style?.fillRadius ?? this._defaultRadius;
           if (
             sx + r >= -size.width / 2 &&
             sx - r < size.width / 2 &&
@@ -313,10 +326,10 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
           if (Math.abs(sx) * size.height <= Math.abs(sy) * size.width) {
             // Vertical clamp.
             bx = ((size.height / 2) * sx) / Math.abs(sy);
-            by = Math.sign(sy) * (size.height / 2 - 15);
+            by = Math.sign(sy) * (size.height / 2 - this._defaultRadius);
           } else {
             // Horizontal clamp.
-            bx = Math.sign(sx) * (size.width / 2 - 15);
+            bx = Math.sign(sx) * (size.width / 2 - this._defaultRadius);
             by = ((size.width / 2) * sy) / Math.abs(sx);
           }
           return {
@@ -324,7 +337,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
             x: bx,
             y: by,
             rotation: (Math.atan2(by, bx) * 180) / Math.PI,
-            scale: (v.style?.fillRadius ?? 15) / 15,
+            scale: (v.style?.fillRadius ?? this._defaultRadius) / this._defaultRadius,
             color: v.style?.fillColor ?? "#a1d7a1",
           };
         };
@@ -430,21 +443,37 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .attr("stroke", (d) => d.style?.strokeColor ?? "#999")
       .attr("stroke-opacity", 0.6)
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 1)
-      .attr("marker-end", ({ directed }) => (directed ? "url(#arrow)" : null))
       .attr("d", this._fnLinks[this._type]);
 
-    this.nodeSel = this.nodeSel?.data(this._nodes)
-      .join("circle")
-      .attr("r", (d) => d.style?.fillRadius ?? 15)
-      .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
-      .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
-      .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
-      .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5);
 
-    this.textSel = this.textSel?.data(this._nodes)
-      .join("text")
-      .attr("text-anchor", "middle")
-      .text((d) => d.data.label ?? "");
+    if (this.isRadial()) {
+      this.nodeSel = this.nodeSel?.data(this._nodes)
+        .join("circle")
+        .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
+        .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
+        .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
+        .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
+        .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5)
+        .attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
+      this.textSel = this.textSel?.data(this._nodes)
+        .join("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`)
+        .text((d) => d.data.label ?? "");
+    } else {
+      this.nodeSel = this.nodeSel?.data(this._nodes)
+        .join("circle")
+        .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
+        .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
+        .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
+        .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
+        .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5);
+
+      this.textSel = this.textSel?.data(this._nodes)
+        .join("text")
+        .attr("text-anchor", "middle")
+        .text((d) => d.data.label ?? "");
+    }
 
     this.tick();
   }

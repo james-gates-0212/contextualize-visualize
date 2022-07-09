@@ -91,6 +91,146 @@ const treeSampleData = {
         },
       ],
     },
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+            {
+              label: "Level 3",
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Level 1",
+      children: [
+        {
+          label: "Level 2",
+          children: [
+            {
+              label: "Level 3",
+              children: [
+                {
+                  label: "Level 4",
+                  children: [
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                    {
+                      label: "Level 5",
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              label: "Level 3",
+            },
+            {
+              label: "Level 3",
+            },
+            {
+              label: "Level 3",
+            },
+          ],
+        },
+      ],
+    },
   ],
 };
 
@@ -103,4 +243,10 @@ HorizontalTree.args = {
 export const VerticalTree = Template.bind({});
 VerticalTree.args = {
   data: treeSampleData,
+};
+
+export const RadialTree = Template.bind({});
+RadialTree.args = {
+  data: treeSampleData,
+  type: ETreeTypes.Radial,
 };
