@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle } from "types";
+import * as TreePlot from "./tree";
 import { createSvg } from "utility";
 
 /** A more concise type to handle d3.Selection types. */
@@ -111,6 +112,12 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   private _layout: IGraphPlotLayout;
   // #endregion
 
+  // #region Hierarchy Tree
+  private _treeData: Array<TreePlot.ITreePlotData>;
+  private _treePlots: Array<TreePlot.default>;
+  private _treeLayout: TreePlot.TTreeLayout;
+  // #endregion
+
   /**
    * Constructs a new graph plot.
    * @param data Data to be plotted. Optional.
@@ -138,6 +145,11 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     this._forceX = d3.forceX(0).strength(0.05);
     this._forceY = d3.forceY(0).strength(0.05);
 
+    // Setup the tree layout.
+    this._treeLayout = "none";
+    this._treeData = [];
+    this._treePlots = [];
+
     // Initialize the extensions.
     this.zoomExt = d3
       .zoom<SVGSVGElement, unknown>()
@@ -157,10 +169,22 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     // Perform setup tasks.
     this.setupElements();
     this.setupSimulation();
+    this.setupHierarchyTree();
+  }
+
+  private delete() {
+    if (this.svgSel) {
+      this.svgSel.remove();
+      this.svgSel = undefined;
+    }
   }
 
   /** Initializes the elements for the graph plot. */
   private setupElements() {
+    if (!this.isNoneTreeLayout()) {
+      this.delete();
+      return;
+    }
     if (this.container) {
       // Create the SVG element.
       const { svg } = createSvg(this.container, this.layout, true);
@@ -217,7 +241,9 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
         .selectAll("text");
     }
   }
+
   private setupSimulation() {
+    if (!this.isNoneTreeLayout()) return;
     // Set the data within the force simulation.
     this.forceExt.nodes(this._data.vertices);
     this.forceExt
@@ -225,10 +251,54 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       ?.links(this._data.edges);
   }
 
+  private setupHierarchyTree() {
+    // Set the data for hierarchy tree structure.
+    if (this.container) {
+      const vertices = this._data.vertices;
+      const edges = this._data.edges;
+      const container = this.container;
+      const layout = this.layout;
+      const withChildren = (parent: IGraphVertex) => {
+        const root:TreePlot.ITreePlotData = {
+          id: parent.id,
+          label: parent.label,
+          selected: parent.selected,
+          expanded: parent.expanded,
+          style: parent.style,
+          children: [],
+        };
+        root.children = vertices.filter(
+          child => !!edges.find(
+            ({ source, target }) => source.id === parent.id && target.id === child.id
+          )
+        ).map(
+          child => withChildren(child)
+        );
+        return root;
+      };
+      this._treeData = vertices.filter(
+        vertex => !edges.find(({ target }) => target.id === vertex.id)
+      ).map(
+        vertex => withChildren(vertex)
+      );
+      console.log(this._treeData);
+      this._treePlots = this._treeData.map(
+        treeData => new TreePlot.default(treeData, layout, container)
+      );
+    }
+  }
+
+  private isNoneTreeLayout() {
+    return this._treeLayout === "none";
+  }
+
   /**
    * Updates the plot by setting positions according to positions calculated by the force simulation.
    */
   private tick() {
+    if (!this.isNoneTreeLayout()) {
+      return;
+    }
     // Update the link source and target positions.
     if (this.linkSel) {
       this.linkSel
@@ -324,6 +394,9 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    * @returns The drag behavior.
    */
   private drag() {
+    if (!this.isNoneTreeLayout()) {
+      return;
+    }
     const that = this;
     const onDragStarted = (
       event: d3.D3DragEvent<SVGCircleElement, IGraphVertex, IGraphVertex>
@@ -358,7 +431,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   /** Zooms the plot to fit all of the data within the viewbox. */
   public zoomToFit() {
     // Get the size of the SVG element.
-    if (!this.zoomSel) return;
+    if (!this.zoomSel || !this.isNoneTreeLayout()) return;
     const {
       size: { width, height },
     } = createSvg(undefined, this.layout);
@@ -421,6 +494,19 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   }
   // #endregion
 
+  // #region Hierarchy Tree Layout Getters/Setters
+  public get treeLayout(): TreePlot.TTreeLayout {
+    return this._treeLayout ?? "none";
+  }
+
+  public set treeLayout(value: TreePlot.TTreeLayout) {
+    this._treeLayout = value;
+    this._treePlots?.forEach(
+      tree => tree.treeLayout = value
+    );
+  }
+  // #endregion
+
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
     return this._container;
@@ -428,6 +514,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   public set container(value: HTMLElement | undefined) {
     this._container = value;
     this.setupElements();
+    this.setupHierarchyTree();
   }
   public get layout(): IGraphPlotLayout {
     return { ...this._layout };
@@ -474,6 +561,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
 
     this._data = { vertices: nodes, edges: links };
     this.setupSimulation();
+    this.setupHierarchyTree();
   }
   // #endregion
 
@@ -482,13 +570,15 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    * Should be called when vertices or edges have been added or removed.
    */
   public simulate(alpha: number = 1.0) {
+    if (!this.isNoneTreeLayout()) return;
     this.forceExt.alpha(alpha).restart();
   }
-  /**
-   * Renders a plot of the graph.
-   * Should be called when data is updated.
-   */
-  public render() {
+
+  private defaultRender() {
+    if (!this.isNoneTreeLayout()) {
+      this.delete();
+      return;
+    }
     // Update the nodes.
     this.nodeSel = this.nodeSel
       ?.data(this._data.vertices, (d) => d.id)
@@ -540,6 +630,24 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       .attr("text-anchor", "middle");
 
     this.tick();
+  }
+
+  public treeRender() {
+    if (this.isNoneTreeLayout()) {
+      return;
+    }
+    this._treePlots?.forEach(
+      tree => tree.render()
+    );
+  }
+
+  /**
+   * Renders a plot of the graph.
+   * Should be called when data is updated.
+   */
+  public render() {
+    this.defaultRender();
+    this.treeRender();
   }
 }
 

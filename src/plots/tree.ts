@@ -11,50 +11,12 @@ type Selection<
 > = d3.Selection<GElement, Datum, PElement, PDatum>;
 
 /** Tree Layouts */
-export type TTreeLayout = "none" | "horizontal" | "vertical" | "radial/circular";
+type TTreeLayout = "none" | "horizontal" | "vertical" | "radial/circular";
 
-/** Represents a locator element for the plot. */
-interface ITreeLocator {
-  /** The vertex that the locator corresponds to. */
-  vertex: ITreeVertex;
-  /** The x-coordinate of the locator arrow. */
-  x: number;
-  /** The y-coordinate of the locator arrow. */
-  y: number;
-  /** The angle of the locator arrow. */
-  rotation: number;
-  /** The scale of the locator arrow. */
-  scale: number;
-  /** The color of the locator arrow. */
-  color: string;
-}
 /** Represents a vertex to plot. */
-interface ITreeVertex extends d3.HierarchyPointNode<ITreePlotData> {
-  /** The unique identifier of the vertex. */
-  id: string;
-
-  /** The label of the vertex. */
-  label?: string;
-
-  /** Whether the vertex is currently selected. */
-  selected?: boolean;
-  /** Whether the vertex is currently expanded. */
-  expanded?: boolean;
-
-  /** The styling to be applied to the vertex. */
-  style?: IPlotStyle;
-}
+interface ITreeVertex extends d3.HierarchyPointNode<ITreePlotData> {}
 /** Represents an edge to plot. */
-interface ITreeEdge extends d3.HierarchyPointLink<ITreeVertex> {
-  /** Whether the vertex is directed. */
-  directed: boolean;
-
-  /** The label of the edge. */
-  label?: string;
-
-  /** The styling to be applied to the edge. */
-  style?: IPlotStyle;
-}
+interface ITreeEdge extends d3.HierarchyPointLink<ITreeVertex> {}
 
 /** Represents the data contained in the plot. */
 interface ITreePlotData {
@@ -104,7 +66,6 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   private linkSel?: Selection<d3.BaseType, ITreeEdge, SVGGElement>;
   private nodeSel?: Selection<d3.BaseType, ITreeVertex, SVGGElement>;
   private textSel?: Selection<d3.BaseType, ITreeVertex, SVGGElement>;
-  private locSel?: Selection<d3.BaseType, ITreeLocator, SVGGElement>;
   private selectSel?: Selection<d3.BaseType, ITreeVertex, SVGGElement>;
   // #endregion
 
@@ -119,16 +80,16 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   private _root: ITreeVertex = {} as ITreeVertex;
   private _nodes: ITreeVertex[] = [];
   private _links: ITreeEdge[] = [];
-  private _fnLinks = new Map<String, any>([
+  private _linkMethods = new Map<String, any>([
     [
       "vertical",
-      d3.linkVertical<ITreeEdge, Number[]>()
+      d3.linkVertical<ITreeEdge, number[]>()
         .source(d => [d.source.x, d.source.y])
         .target(d => [d.target.x, d.target.y]),
     ],
     [
       "horizontal",
-      d3.linkHorizontal<ITreeEdge, Number[]>()
+      d3.linkHorizontal<ITreeEdge, number[]>()
         .source(d => [d.source.x, d.source.y])
         .target(d => [d.target.x, d.target.y]),
     ],
@@ -168,21 +129,10 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .filter((event: any) => !event.button && event.type !== "dblclick")
       .on("zoom", (event) => {
         this.zoomSel?.attr("transform", event.transform);
-        this.tick();
       });
 
     // Perform setup tasks.
     this.setupElements();
-  }
-
-  private convert<Datum>(value: Datum): Datum {
-    if (this.isHorizontal()) {
-      if (Array.isArray(value)) {
-        value.reverse();
-        return value;
-      }
-    }
-    return value;
   }
 
   private isNone() {
@@ -203,19 +153,24 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
   /** Initializes the elements for the graph plot. */
   private setupElements() {
+    if (this.isNone()) {
+      this.delete();
+      return;
+    }
     if (this.container) {
       // Create the SVG element.
       const { svg, size } = createSvg(this.container, this.layout);
 
       this._root = d3.hierarchy(this._data, d => d.children) as ITreeVertex;
 
-      const radius = Math.min(size.width, size.height) * 3 / 2.1;
+      const radius = Math.min(size.width, size.height);
+      const treeSize:[number, number] = [size.width, size.height];
 
       // Compute the layout.
       if (this.isRadial()) {
         d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(this._root);
       } else {
-        d3.tree().size(this.convert([size.width * 2, size.height * 2]))(this._root);
+        d3.tree().size(this.isVertical() ? treeSize : treeSize.reverse() as [number, number])(this._root);
       }
 
       if (this.isHorizontal()) {
@@ -252,7 +207,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
         .ease(d3.easeLinear)
         .on("end", function() {
             const box = (g.node() as SVGAElement).getBBox();
-            svg.attr("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+            svg.attr("viewBox", `${box.x} ${box.y} ${Math.max(box.width, box.height)} ${Math.max(box.width, box.height)}`);
         });
 
       // Setup all of the data-related elements.
@@ -266,7 +221,6 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
         .attr("fill", "currentcolor")
         .style("pointer-events", "none")
         .selectAll("circle");
-      this.locSel = this.svgSel.append("g").selectAll("use");
       this.textSel = this.zoomSel
         .append("g")
         .attr("fill", "currentcolor")
@@ -275,10 +229,18 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     }
   }
 
+  private delete() {
+    if (this.svgSel) {
+      this.svgSel.remove();
+      this.svgSel = undefined;
+    }
+  }
+
   /**
    * Updates the plot by setting positions according to positions calculated by the force simulation.
    */
   private tick() {
+    if (this.isNone()) return;
     // Update the link source and target positions.
     if (this.linkSel) {
       this.linkSel
@@ -307,85 +269,16 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
         .attr("x", ({ x }) => x || 0)
         .attr(
           "y",
-          ({ style, y }) => (y || 0) + calcOffset(style?.fillRadius ?? this._defaultRadius)
+          ({ data, y }) => (y || 0) + calcOffset(data.style?.fillRadius ?? this._defaultRadius)
         );
     }
-
-    // Update the arrow positions.
-    // Calculate the arrows that are not within the viewport.
-    if (this.locSel) {
-      const { size } = createSvg(undefined, this.layout, true);
-      if (this.zoomSel) {
-        const transform = d3.zoomTransform(this.zoomSel.node()!);
-        const { x, y, k } = transform;
-        const calcLocator = (v: ITreeVertex): ITreeLocator | null => {
-          // Check if the vertex is within the viewport.
-          if (v.x === undefined || v.y === undefined) return null;
-          const sx = x + k * v.x;
-          const sy = y + k * v.y;
-          const r = v.style?.fillRadius ?? this._defaultRadius;
-          if (
-            sx + r >= -size.width / 2 &&
-            sx - r < size.width / 2 &&
-            sy + r >= -size.height / 2 &&
-            sy - r < size.height / 2
-          )
-            return null;
-
-          // Get a bounded position for the locator arrow.
-          let bx, by: number;
-          if (Math.abs(sx) * size.height <= Math.abs(sy) * size.width) {
-            // Vertical clamp.
-            bx = ((size.height / 2) * sx) / Math.abs(sy);
-            by = Math.sign(sy) * (size.height / 2 - this._defaultRadius);
-          } else {
-            // Horizontal clamp.
-            bx = Math.sign(sx) * (size.width / 2 - this._defaultRadius);
-            by = ((size.width / 2) * sy) / Math.abs(sx);
-          }
-          return {
-            vertex: v,
-            x: bx,
-            y: by,
-            rotation: (Math.atan2(by, bx) * 180) / Math.PI,
-            scale: (v.style?.fillRadius ?? this._defaultRadius) / this._defaultRadius,
-            color: v.style?.fillColor ?? "#a1d7a1",
-          };
-        };
-      }
-    }
-  }
-  /**
-   * Handles dragging a node in the plot.
-   * @returns The drag behavior.
-   */
-  private drag() {
-    const that = this;
-    const onDragStarted = (
-      event: d3.D3DragEvent<SVGCircleElement, ITreeVertex, ITreeVertex>
-    ) => {
-    };
-    const onDragEnded = (
-      event: d3.D3DragEvent<SVGCircleElement, ITreeVertex, ITreeVertex>
-    ) => {
-    };
-    const onDragged = (
-      event: d3.D3DragEvent<SVGCircleElement, ITreeVertex, ITreeVertex>
-    ) => {
-    };
-
-    return d3
-      .drag<SVGCircleElement, ITreeVertex, SVGElement>()
-      .on("start", onDragStarted)
-      .on("end", onDragEnded)
-      .on("drag", onDragged);
   }
 
   // #region Zooming
   /** Zooms the plot to fit all of the data within the viewbox. */
   public zoomToFit() {
     // Get the size of the SVG element.
-    if (!this.zoomSel) return;
+    if (!this.zoomSel || this.isNone()) return;
     const {
       size: { width, height },
     } = createSvg(undefined, this.layout);
@@ -417,6 +310,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
   public set treeLayout(value: TTreeLayout) {
     this._treeLayout = value;
+    this.setupElements();
   }
   // #endregion
 
@@ -459,24 +353,25 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
    */
   public render() {
     if (this.isNone()) {
+      this.delete();
       return;
     }
 
     this.linkSel = this.linkSel?.data(this._links)
       .join("path")
       .attr("fill", "none")
-      .attr("stroke", (d) => d.style?.strokeColor ?? "#999")
+      .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", (d) => d.style?.strokeWidth ?? 1)
-      .attr("d", this._fnLinks.get(this._treeLayout ?? "none"));
+      .attr("stroke-width", 1)
+      .attr("d", this._linkMethods.get(this._treeLayout ?? "none"));
 
     this.nodeSel = this.nodeSel?.data(this._nodes)
       .join("circle")
-      .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
-      .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
-      .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
-      .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
-      .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5);
+      .attr("r", (d) => d.data.style?.fillRadius ?? this._defaultRadius)
+      .attr("fill", (d) => d.data.style?.fillColor ?? "#a1d7a1")
+      .attr("fill-opacity", (d) => `${d.data.expanded ? 0 : 100}%`)
+      .attr("stroke", (d) => d.data.style?.strokeColor ?? "#53b853")
+      .attr("stroke-width", (d) => d.data.style?.strokeWidth ?? 2.5);
 
     this.textSel = this.textSel?.data(this._nodes)
       .join("text")
@@ -499,4 +394,5 @@ export type {
   ITreePlotData,
   ITreePlotLayout,
   ITreePlotEvents,
+  TTreeLayout,
 };

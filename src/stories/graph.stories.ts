@@ -6,6 +6,7 @@ import {
   IGraphPlotData,
   IGraphPlotLayout,
   IGraphVertex,
+  TTreeLayout,
 } from "plots";
 import "./plots.css";
 
@@ -21,6 +22,9 @@ interface IGraphPlot {
   forceLink?: number;
   /** The strength of the centering force. */
   forceCenter?: number;
+
+  /** The layout to use for the hierarchy tree plot. */
+  treeLayout?: TTreeLayout;
 }
 
 export default {
@@ -40,6 +44,17 @@ export default {
     forceCenter: {
       control: { type: "range", min: 0, max: 1.0, step: 0.01 },
     },
+    treeLayout: {
+      options: [
+        "none",
+        "horizontal",
+        "vertical",
+        "radial/circular",
+      ],
+      control: {
+        type: "radio",
+      },
+    },
   },
 } as Meta<IGraphPlot>;
 
@@ -50,7 +65,7 @@ const Template: Story<IGraphPlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the graph plot.
-  const { data, layout, forceNode, forceLink, forceCenter } = args;
+  const { data, layout, forceNode, forceLink, forceCenter, treeLayout } = args;
   const plot = new GraphPlot(data, layout, container);
   if (forceNode) plot.forceNode = d3.forceManyBody().strength(-forceNode);
   if (forceLink) {
@@ -62,6 +77,9 @@ const Template: Story<IGraphPlot> = (args) => {
   if (forceCenter) {
     plot.forceX = d3.forceX(0).strength(forceCenter);
     plot.forceY = d3.forceY(0).strength(forceCenter);
+  }
+  if (treeLayout) {
+    plot.treeLayout = treeLayout;
   }
   plot.render();
 
@@ -80,6 +98,7 @@ SingleNode.args = {
     ],
     edges: [],
   },
+  treeLayout: "none",
 };
 
 export const MultipleNodes = Template.bind({});
@@ -95,6 +114,7 @@ MultipleNodes.args = {
       { source: "B", target: "C", directed: false },
     ],
   },
+  treeLayout: "none",
 };
 
 export const HierarchicalNodes = Template.bind({});
@@ -110,6 +130,7 @@ HierarchicalNodes.args = {
       { id: "1-1-3", label: "Child 3" },
       { id: "1-3-1", label: "Child 1" },
       { id: "1-3-2", label: "Child 2" },
+
     ],
     edges: [
       { source: "1", target: "1-1", directed: true },
@@ -122,6 +143,7 @@ HierarchicalNodes.args = {
       { source: "1-2", target: "1-3-2", directed: true },
     ],
   },
+  treeLayout: "none",
 };
 
 export const TwoHubsOfNodes = Template.bind({});
@@ -167,4 +189,5 @@ TwoHubsOfNodes.args = {
     vertices,
     edges,
   },
+  treeLayout: "none",
 };
