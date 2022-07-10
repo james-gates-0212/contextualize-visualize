@@ -4,7 +4,7 @@ import {
   TreePlot,
   ITreePlotData,
   ITreePlotLayout,
-  ETreeTypes,
+  TTreeLayout,
 } from "plots";
 import "./plots.css";
 
@@ -13,13 +13,25 @@ interface ITreePlot {
   data?: ITreePlotData;
   /** The layout to use for the graph plot. */
   layout?: ITreePlotLayout;
-  /** The view type for the graph plot. */
-  type: ETreeTypes;
+  /** The layout to use for the hierarchy tree plot. */
+  treeLayout?: TTreeLayout;
 }
 
 export default {
   title: "Plots/Tree",
-  type: ETreeTypes.Vertical,
+  argTypes: {
+    treeLayout: {
+      options: [
+        "none",
+        "horizontal",
+        "vertical",
+        "radial/circular",
+      ],
+      control: {
+        type: "radio",
+      },
+    },
+  },
 } as Meta<ITreePlot>;
 
 const Template: Story<ITreePlot> = (args) => {
@@ -29,13 +41,14 @@ const Template: Story<ITreePlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the graph plot.
-  const { data, layout, type } = args;
-  const plot = new TreePlot(data, layout, container, type);
+  const { data, layout, treeLayout } = args;
+  const plot = new TreePlot(data, layout, container, treeLayout);
   plot.render();
 
   return container;
 };
 
+// #region Sample Data for Tree
 const treeSampleData = {
   label: "Root",
   children: [
@@ -233,20 +246,9 @@ const treeSampleData = {
     },
   ],
 };
+// #endregion
 
-export const HorizontalTree = Template.bind({});
-HorizontalTree.args = {
+export const HierarchyTree = Template.bind({});
+HierarchyTree.args = {
   data: treeSampleData,
-  type: ETreeTypes.Horizontal,
-};
-
-export const VerticalTree = Template.bind({});
-VerticalTree.args = {
-  data: treeSampleData,
-};
-
-export const RadialTree = Template.bind({});
-RadialTree.args = {
-  data: treeSampleData,
-  type: ETreeTypes.Radial,
 };

@@ -10,6 +10,9 @@ type Selection<
   PDatum = undefined
 > = d3.Selection<GElement, Datum, PElement, PDatum>;
 
+/** Tree Layouts */
+export type TTreeLayout = "none" | "horizontal" | "vertical" | "radial/circular";
+
 /** Represents a locator element for the plot. */
 interface ITreeLocator {
   /** The vertex that the locator corresponds to. */
@@ -73,7 +76,9 @@ interface ITreePlotData {
   style?: IPlotStyle;
 }
 /** Represents the layout information for the plot. */
-interface ITreePlotLayout extends IPlotLayout<"graph"> {}
+interface ITreePlotLayout extends IPlotLayout<"graph"> {
+  treeLayout?: TTreeLayout;
+}
 /** The events that may be emitted from a graph plot. */
 interface ITreePlotEvents {
   /** An event listener that is called when a node is called exactly once (does not fire on double click). */
@@ -83,13 +88,6 @@ interface ITreePlotEvents {
   /** An event listener that is called when the empty space is clicked. */
   clickSpace: () => void;
 }
-
-/** The types for the tree. */
-export enum ETreeTypes {
-  Vertical = 0,
-  Horizontal = 1,
-  Radial = 2,
-};
 
 // TODO: Consider using WebCoLa to improve the performance of the visualization.
 // TODO: Make sure to add definitions to the SVG for optimal performance.
@@ -117,21 +115,30 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   // #region Data
   private _data: ITreePlotData;
   private _layout: ITreePlotLayout;
+  private _treeLayout: TTreeLayout;
   private _root: ITreeVertex = {} as ITreeVertex;
   private _nodes: ITreeVertex[] = [];
   private _links: ITreeEdge[] = [];
-  private _type: ETreeTypes;
-  private _fnLinks = [
+  private _fnLinks = new Map<String, any>([
+    [
+      "vertical",
       d3.linkVertical<ITreeEdge, Number[]>()
         .source(d => [d.source.x, d.source.y])
         .target(d => [d.target.x, d.target.y]),
+    ],
+    [
+      "horizontal",
       d3.linkHorizontal<ITreeEdge, Number[]>()
         .source(d => [d.source.x, d.source.y])
         .target(d => [d.target.x, d.target.y]),
+    ],
+    [
+      "radial/circular",
       d3.linkRadial<ITreeEdge, ITreeVertex>()
         .angle(d => d.x)
         .radius(d => d.y),
-  ];
+    ],
+  ]);
   private _defaultRadius = 15;
   // #endregion
 
@@ -145,15 +152,15 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     data?: ITreePlotData,
     layout?: ITreePlotLayout,
     container?: HTMLElement,
-    type: ETreeTypes = ETreeTypes.Vertical,
+    treeLayout?: TTreeLayout
   ) {
     super();
 
     // Set the data.
-    this._data = data ?? {} as ITreePlotData;
+    this._data = data ?? {};
     this._layout = layout ?? {};
     this._container = container;
-    this._type = type;
+    this._treeLayout = treeLayout ?? "none";
 
     // Initialize the extensions.
     this.zoomExt = d3
@@ -169,7 +176,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   }
 
   private convert<Datum>(value: Datum): Datum {
-    if (this._type === ETreeTypes.Horizontal) {
+    if (this.isHorizontal()) {
       if (Array.isArray(value)) {
         value.reverse();
         return value;
@@ -178,16 +185,20 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     return value;
   }
 
+  private isNone() {
+    return this._treeLayout === "none";
+  }
+
   private isRadial() {
-    return this._type === ETreeTypes.Radial;
+    return this._treeLayout === "radial/circular";
   }
 
   private isVertical() {
-    return this._type === ETreeTypes.Vertical;
+    return this._treeLayout === "vertical";
   }
 
   private isHorizontal() {
-    return this._type === ETreeTypes.Horizontal;
+    return this._treeLayout === "horizontal";
   }
 
   /** Initializes the elements for the graph plot. */
@@ -399,6 +410,16 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   }
   // #endregion
 
+  // #region Hierarchy Tree Layout Getters/Setters
+  public get treeLayout(): TTreeLayout {
+    return this._treeLayout ?? "none";
+  }
+
+  public set treeLayout(value: TTreeLayout) {
+    this._treeLayout = value;
+  }
+  // #endregion
+
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
     return this._container;
@@ -437,42 +458,34 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
    * Should be called when data is updated.
    */
   public render() {
+    if (this.isNone()) {
+      return;
+    }
+
     this.linkSel = this.linkSel?.data(this._links)
       .join("path")
       .attr("fill", "none")
       .attr("stroke", (d) => d.style?.strokeColor ?? "#999")
       .attr("stroke-opacity", 0.6)
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 1)
-      .attr("d", this._fnLinks[this._type]);
+      .attr("d", this._fnLinks.get(this._treeLayout ?? "none"));
 
+    this.nodeSel = this.nodeSel?.data(this._nodes)
+      .join("circle")
+      .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
+      .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
+      .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
+      .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
+      .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5);
+
+    this.textSel = this.textSel?.data(this._nodes)
+      .join("text")
+      .attr("text-anchor", "middle")
+      .text((d) => d.data.label ?? "");
 
     if (this.isRadial()) {
-      this.nodeSel = this.nodeSel?.data(this._nodes)
-        .join("circle")
-        .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
-        .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
-        .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
-        .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
-        .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5)
-        .attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
-      this.textSel = this.textSel?.data(this._nodes)
-        .join("text")
-        .attr("text-anchor", "middle")
-        .attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`)
-        .text((d) => d.data.label ?? "");
-    } else {
-      this.nodeSel = this.nodeSel?.data(this._nodes)
-        .join("circle")
-        .attr("r", (d) => d.style?.fillRadius ?? this._defaultRadius)
-        .attr("fill", (d) => d.style?.fillColor ?? "#a1d7a1")
-        .attr("fill-opacity", (d) => `${d.expanded ? 0 : 100}%`)
-        .attr("stroke", (d) => d.style?.strokeColor ?? "#53b853")
-        .attr("stroke-width", (d) => d.style?.strokeWidth ?? 2.5);
-
-      this.textSel = this.textSel?.data(this._nodes)
-        .join("text")
-        .attr("text-anchor", "middle")
-        .text((d) => d.data.label ?? "");
+      this.nodeSel = this.nodeSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
+      this.textSel = this.textSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
     }
 
     this.tick();
