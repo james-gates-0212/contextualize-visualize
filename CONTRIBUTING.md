@@ -6,3 +6,4 @@ This file contains a list of contributors of the project in this repository alon
 The contributors are:
 
 - M - Matthew Miller (matthew.miller@contextualize.us.com)
+- C - Andrew Morgan (andrew.morgan@contextualize.us.com)

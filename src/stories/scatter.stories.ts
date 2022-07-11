@@ -26,7 +26,9 @@ const Template: Story<IScatterPlot> = (args) => {
 
   // Set up the scatter plot.
   const { data, layout } = args;
+
   const plot = new ScatterPlot2d(data, layout, container);
+
   plot.render();
 
   return container;
@@ -45,6 +47,16 @@ SimpleScatter.args = {
       { id: "6", x: +3, y: 9 },
     ],
   },
+  layout: {
+    axes: {
+      x: {
+        label: "Simple Scatter-X"
+      },
+      y: {
+        label: "Simple Scatter-Y"
+      }
+    }
+  },
 };
 
 export const RandomScatter = Template.bind({});
@@ -59,6 +71,18 @@ for (let k = 0; k < 500; k++) {
 RandomScatter.args = {
   data: {
     data,
+  },
+  layout: {
+    axes: {
+      x: {
+        label: "Random Scatter-X",
+        showLines: true
+      },
+      y: {
+        label: "Random Scatter-Y",
+        showLines: true
+      }
+    }
   },
 };
 
@@ -76,6 +100,20 @@ ColormapScatter.args = {
   data: {
     data,
     colormap: "inferno",
+  },
+  layout: {
+    axes: {
+      x: {
+        label: "Colormap Scatter-X",
+        showLines: true
+      },
+      y: {
+        label: "Colormap Scatter-Y"
+      }
+    },
+    style: {
+      color: "red"
+    }
   },
 };
 
@@ -98,5 +136,18 @@ DifferentRadiiScatter.args = {
   data: {
     data,
     colormap: "inferno",
+  },
+  layout: {
+    axes: {
+      x: {
+        label: "Different Radii Scatter-X"
+      },
+      y: {
+        label: "Different Radii Scatter-Y"
+      }
+    },
+    style: {
+      color: "green"
+    }
   },
 };
