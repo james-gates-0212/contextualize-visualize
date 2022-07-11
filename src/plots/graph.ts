@@ -114,7 +114,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
 
   // #region Hierarchy Tree
   private _treeData: Array<TreePlot.ITreePlotData>;
-  private _treePlots: Array<TreePlot.default>;
+  private _treePlot: TreePlot.default | undefined;
   private _treeLayout: TreePlot.TTreeLayout;
   // #endregion
 
@@ -148,7 +148,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     // Setup the tree layout.
     this._treeLayout = "none";
     this._treeData = [];
-    this._treePlots = [];
 
     // Initialize the extensions.
     this.zoomExt = d3
@@ -269,7 +268,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
         };
         root.children = vertices.filter(
           child => !!edges.find(
-            ({ source, target }) => source.id === parent.id && target.id === child.id
+            ({ source, target }) => (source as IGraphVertex).id === parent.id && (target as IGraphVertex).id === child.id
           )
         ).map(
           child => withChildren(child)
@@ -277,13 +276,11 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
         return root;
       };
       this._treeData = vertices.filter(
-        vertex => !edges.find(({ target }) => target.id === vertex.id)
+        vertex => !edges.find(({ target }) => (target as IGraphVertex).id === vertex.id)
       ).map(
         vertex => withChildren(vertex)
       );
-      this._treePlots = this._treeData.map(
-        treeData => new TreePlot.default(treeData, layout, container)
-      );
+      this._treePlot = new TreePlot.default(this._treeData, layout, container);
     }
   }
 
@@ -500,9 +497,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
 
   public set treeLayout(value: TreePlot.TTreeLayout) {
     this._treeLayout = value;
-    this._treePlots?.forEach(
-      tree => tree.treeLayout = value
-    );
+    (this._treePlot as TreePlot.default).treeLayout = value;
   }
   // #endregion
 
@@ -635,9 +630,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     if (this.isNoneTreeLayout()) {
       return;
     }
-    this._treePlots?.forEach(
-      tree => tree.render()
-    );
+    this._treePlot?.render();
   }
 
   /**

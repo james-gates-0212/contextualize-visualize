@@ -1,4 +1,3 @@
-import { transform } from "@babel/core";
 import * as d3 from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle } from "types";
 import { createSvg } from "utility";
@@ -17,7 +16,12 @@ type TTreeLayout = "none" | "horizontal" | "vertical" | "radial/circular";
 /** Represents a vertex to plot. */
 interface ITreeVertex extends d3.HierarchyPointNode<ITreePlotData> {}
 /** Represents an edge to plot. */
-interface ITreeEdge extends d3.HierarchyPointLink<ITreeVertex> {}
+interface ITreeEdge extends d3.HierarchyPointLink<ITreeVertex> {
+  offset?: {
+    x?: number;
+    y?: number;
+  };
+}
 
 /** Represents the data contained in the plot. */
 interface ITreePlotData {
@@ -34,6 +38,11 @@ interface ITreePlotData {
   selected?: boolean;
   /** Whether the vertex is currently expanded. */
   expanded?: boolean;
+
+  offset?: {
+    x?: number;
+    y?: number;
+  };
 
   /** The styling to be applied to the vertex. */
   style?: IPlotStyle;
@@ -75,10 +84,10 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   // #endregion
 
   // #region Data
-  private _data: ITreePlotData;
+  private _data: ITreePlotData[] = [];
   private _layout: ITreePlotLayout;
   private _treeLayout: TTreeLayout;
-  private _root: ITreeVertex = {} as ITreeVertex;
+  private _roots: ITreeVertex[] = [];
   private _nodes: ITreeVertex[] = [];
   private _links: ITreeEdge[] = [];
   private _linkMethods = new Map<String, any>([
@@ -111,7 +120,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
    * @param container The container to hold the plot. Optional.
    */
   public constructor(
-    data?: ITreePlotData,
+    data?: ITreePlotData[],
     layout?: ITreePlotLayout,
     container?: HTMLElement,
     treeLayout?: TTreeLayout
@@ -119,7 +128,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     super();
 
     // Set the data.
-    this._data = data ?? {};
+    this._data = data ?? [];
     this._layout = layout ?? {};
     this._container = container;
     this._treeLayout = treeLayout ?? "none";
@@ -152,6 +161,64 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     return this._treeLayout === "horizontal";
   }
 
+  private setupHierarchyTree(data: ITreePlotData, offsetY: number = 0) {
+    const root = d3.hierarchy(data) as ITreeVertex;
+
+    const totalLeaves = root.leaves().length > 20 ? root.leaves().length : 20;
+    const minSize = this._defaultRadius ** 2 * totalLeaves / (this.isRadial() ? Math.sqrt(this._defaultRadius) * Math.PI : 1);
+    const radius =  minSize;
+    const treeWidth = radius / Math.sqrt(this._defaultRadius);
+    const treeHeight = radius / (Math.sqrt(this._defaultRadius) ** 2);
+    const maxSize = this.isRadial() ? radius * 2 : Math.max(treeWidth, treeHeight);
+
+    // Compute the layout.
+    if (this.isRadial()) {
+      d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(root);
+    } else {
+      d3.tree().size([treeWidth, treeHeight])(root);
+    }
+
+    const swap = (node: any) => {
+      if (this.isHorizontal()) {
+        if (node.x !== undefined && node.y !== undefined) {
+          const t = node.x;
+          node.x = node.y;
+          node.y = t;
+        }
+      }
+      return node;
+    };
+
+    root.each(swap);
+
+    this._roots.push(root);
+
+    root.descendants().forEach(node => {
+      if (this.isRadial()) {
+        node.data.offset = {
+          y: offsetY + (offsetY > 0 ? radius : 0)
+        };
+      } else {
+        node.y += offsetY;
+      }
+      this._nodes.push(node);
+    });
+    (root.links() as ITreeEdge[]).forEach(link => {
+      if (this.isRadial()) {
+        link.offset = {
+          y: offsetY + (offsetY > 0 ? radius : 0),
+        };
+      }
+      this._links.push(link);
+    });
+
+    return {
+      treeWidth,
+      treeHeight,
+      maxSize,
+    };
+  }
+
   /** Initializes the elements for the graph plot. */
   private setupElements() {
     if (this.isNone()) {
@@ -162,40 +229,20 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       // Create the SVG element.
       const { svg, size } = createSvg(this.container, this.layout, this.isRadial());
 
-      this._root = d3.hierarchy(this._data) as ITreeVertex;
+      const padding = 200;
 
-      const totalLeaves = this._root.leaves().length > 20 ? this._root.leaves().length : 20;
-      const minSize = this._defaultRadius ** 2 * totalLeaves / (this.isRadial() ? Math.sqrt(this._defaultRadius) * Math.PI : 1);
-      const radius =  minSize;
-      const treeWidth = radius / Math.sqrt(this._defaultRadius);
-      const treeHeight = radius / (Math.sqrt(this._defaultRadius) ** 2);
-      const maxSize = this.isRadial() ? radius * 2 : Math.max(treeWidth, treeHeight);
+      let contentWidth = padding;
+      let contentHeight = this.isRadial() ? 0 : padding;
+      let maxContentSize = 1;
+      let prevMaxSize = 0;
 
-      // Compute the layout.
-      if (this.isRadial()) {
-        d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(this._root);
-      } else {
-        d3.tree().size([treeWidth, treeHeight])(this._root);
-      }
-
-      const isHorizontalTree = this.isHorizontal();
-
-      const swap = (node: any) => {
-        if (isHorizontalTree) {
-          if (node.x !== undefined && node.y !== undefined) {
-            const t = node.x;
-            node.x = node.y;
-            node.y = t;
-          }
-        }
-        return node;
-      };
-
-      this._root.each(swap);
-
-      this._nodes = this._root.descendants();
-
-      this._links = this._root.links() as ITreeEdge[];
+      this._data.forEach((data, index) => {
+        const { treeWidth, treeHeight, maxSize } = this.setupHierarchyTree(data, this.isRadial() ? (prevMaxSize / 2 + index * padding) : contentHeight);
+        prevMaxSize += maxSize;
+        contentWidth = Math.max(contentWidth, this.isVertical() ? treeWidth : treeHeight);
+        contentHeight += (this.isVertical() ? treeHeight : treeWidth) + padding;
+        maxContentSize = Math.max(contentWidth, contentHeight, maxSize);
+      });
 
       this.svgSel = svg
         .style("box-sizing", "border-box")
@@ -211,21 +258,26 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       // Notice we disable the double click zoom behavior because we allow double click to be used to
       // expand/collapse nodes.
       const viewPortMax = this.isVertical() ? size.width : Math.min(size.width, size.height);
-      const scaleRate = viewPortMax / maxSize;
+      const scaleRate = viewPortMax / maxContentSize;
       const translateForm = {
         x: 0,
         y: 0,
       };
       if (this.isVertical()) {
-        translateForm.y = (size.height - treeHeight * scaleRate) / 2;
+        translateForm.y = (size.height - contentHeight * scaleRate) / 2;
       }
       if (this.isHorizontal()) {
-        translateForm.x = (size.width - treeHeight * scaleRate) / 2;
+        translateForm.x = (size.width - contentWidth * scaleRate) / 2;
       }
       this.zoomSel = this.svgSel.append("g");
       this.svgSel
         .call(this.zoomExt)
-        .call(this.zoomExt.transform, d3.zoomIdentity.translate(translateForm.x, translateForm.y).scale(scaleRate));
+        .call(
+          this.zoomExt.transform,
+          d3.zoomIdentity
+            .translate(translateForm.x, translateForm.y)
+            .scale(scaleRate)
+        );
 
       // Setup all of the data-related elements.
       this.linkSel = this.zoomSel
@@ -352,11 +404,11 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     }
   }
 
-  public get data(): ITreePlotData {
-    return { ...this._data };
+  public get data(): ITreePlotData[] {
+    return [ ...this._data ];
   }
 
-  public set data(value: ITreePlotData) {
+  public set data(value: ITreePlotData[]) {
     this._data = value;
   }
   // #endregion
@@ -373,7 +425,8 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
     this.linkSel = this.linkSel?.data(this._links)
       .join("path")
-      .attr("d", this._linkMethods.get(this._treeLayout ?? "none"));
+      .attr("d", this._linkMethods.get(this._treeLayout ?? "none"))
+      .attr("transform", d => `translate(0, ${d.offset?.y || 0})`);
 
     this.nodeSel = this.nodeSel?.data(this._nodes)
       .join("circle")
@@ -396,8 +449,9 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .attr("transform", d => isVerticalTree ? `rotate(${90} ${d.x || 0},${d.y || 0})` : null);
 
     if (this.isRadial()) {
-      this.nodeSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y}, 0)`);
-      this.textSel?.attr("x", 0).attr("y", 0).attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y + calcOffset(d)}, 0)`);
+      this.nodeSel?.attr("transform", d => `translate(0, ${d.data.offset?.y || 0}) rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y}, 0)`);
+      this.textSel?.attr("x", 0).attr("y", 0)
+        .attr("transform", d => `translate(0, ${d.data.offset?.y || 0}) rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y + calcOffset(d)}, 0)`);
     }
 
     this.tick();
