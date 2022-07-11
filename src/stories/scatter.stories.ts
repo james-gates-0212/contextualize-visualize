@@ -12,7 +12,6 @@ interface IScatterPlot {
   data?: IScatterPlotData<IScatterPoint2d>;
   /** The layout to use for the scatter plot. */
   layout: IScatterPlotLayout;
-  axisLabel?: string;
 }
 
 export default {
@@ -26,8 +25,10 @@ const Template: Story<IScatterPlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the scatter plot.
-  const { axisLabel, data, layout } = args;
-  const plot = new ScatterPlot2d(axisLabel, data, layout, container);
+  const { data, layout } = args;
+
+  const plot = new ScatterPlot2d(data, layout, container);
+
   plot.render();
 
   return container;
@@ -46,7 +47,16 @@ SimpleScatter.args = {
       { id: "6", x: +3, y: 9 },
     ],
   },
-  axisLabel: "Simple Scatter",
+  layout: {
+    axes: {
+      x: {
+        label: "Simple Scatter-X"
+      },
+      y: {
+        label: "Simple Scatter-Y"
+      }
+    }
+  },
 };
 
 export const RandomScatter = Template.bind({});
@@ -62,7 +72,18 @@ RandomScatter.args = {
   data: {
     data,
   },
-  axisLabel: "Random Scatter",
+  layout: {
+    axes: {
+      x: {
+        label: "Random Scatter-X",
+        showLines: true
+      },
+      y: {
+        label: "Random Scatter-Y",
+        showLines: true
+      }
+    }
+  },
 };
 
 export const ColormapScatter = Template.bind({});
@@ -80,7 +101,20 @@ ColormapScatter.args = {
     data,
     colormap: "inferno",
   },
-  axisLabel: "Colormap Scatter",
+  layout: {
+    axes: {
+      x: {
+        label: "Colormap Scatter-X",
+        showLines: true
+      },
+      y: {
+        label: "Colormap Scatter-Y"
+      }
+    },
+    style: {
+      color: "red"
+    }
+  },
 };
 
 export const DifferentRadiiScatter = Template.bind({});
@@ -103,5 +137,17 @@ DifferentRadiiScatter.args = {
     data,
     colormap: "inferno",
   },
-  axisLabel: "Different Scatter",
+  layout: {
+    axes: {
+      x: {
+        label: "Different Radii Scatter-X"
+      },
+      y: {
+        label: "Different Radii Scatter-Y"
+      }
+    },
+    style: {
+      color: "green"
+    }
+  },
 };
