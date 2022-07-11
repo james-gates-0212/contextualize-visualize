@@ -281,7 +281,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       ).map(
         vertex => withChildren(vertex)
       );
-      console.log(this._treeData);
       this._treePlots = this._treeData.map(
         treeData => new TreePlot.default(treeData, layout, container)
       );

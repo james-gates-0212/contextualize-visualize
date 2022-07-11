@@ -1,3 +1,4 @@
+import { transform } from "@babel/core";
 import * as d3 from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle } from "types";
 import { createSvg } from "utility";
@@ -159,36 +160,49 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     }
     if (this.container) {
       // Create the SVG element.
-      const { svg, size } = createSvg(this.container, this.layout);
+      const { svg, size } = createSvg(this.container, this.layout, this.isRadial());
 
-      this._root = d3.hierarchy(this._data, d => d.children) as ITreeVertex;
+      this._root = d3.hierarchy(this._data) as ITreeVertex;
 
-      const radius = Math.min(size.width, size.height);
-      const treeSize:[number, number] = [size.width, size.height];
+      const totalLeaves = this._root.leaves().length > 20 ? this._root.leaves().length : 20;
+      const minSize = this._defaultRadius ** 2 * totalLeaves / (this.isRadial() ? Math.sqrt(this._defaultRadius) * Math.PI : 1);
+      const radius =  minSize;
+      const treeWidth = radius / Math.sqrt(this._defaultRadius);
+      const treeHeight = radius / (Math.sqrt(this._defaultRadius) ** 2);
+      const maxSize = this.isRadial() ? radius * 2 : Math.max(treeWidth, treeHeight);
 
       // Compute the layout.
       if (this.isRadial()) {
         d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(this._root);
       } else {
-        d3.tree().size(this.isVertical() ? treeSize : treeSize.reverse() as [number, number])(this._root);
+        d3.tree().size([treeWidth, treeHeight])(this._root);
       }
 
-      if (this.isHorizontal()) {
-        this._root.each(node => {
-          const t = node.x;
-          node.x = node.y;
-          node.y = t;
-        });
-      }
+      const isHorizontalTree = this.isHorizontal();
+
+      const swap = (node: any) => {
+        if (isHorizontalTree) {
+          if (node.x !== undefined && node.y !== undefined) {
+            const t = node.x;
+            node.x = node.y;
+            node.y = t;
+          }
+        }
+        return node;
+      };
+
+      this._root.each(swap);
 
       this._nodes = this._root.descendants();
-      if (this.isRadial()) {
-        this._nodes.reverse();
-      }
 
       this._links = this._root.links() as ITreeEdge[];
 
-      this.svgSel = svg.attr("viewBox", [0, 0, size.width, size.height]).style("box-sizing", "border-box");
+      this.svgSel = svg
+        .style("box-sizing", "border-box")
+        .attr("preserveAspectRatio", "xMidYMid meet");
+      if (this.isRadial()) {
+        this._nodes.reverse();
+      }
       this.svgSel.on("click", (event) => {
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
@@ -196,22 +210,31 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       // Setup the zoom behavior.
       // Notice we disable the double click zoom behavior because we allow double click to be used to
       // expand/collapse nodes.
-      const g = this.zoomSel = this.svgSel.append("g");
-
+      const viewPortMax = this.isVertical() ? size.width : Math.min(size.width, size.height);
+      const scaleRate = viewPortMax / maxSize;
+      const translateForm = {
+        x: 0,
+        y: 0,
+      };
+      if (this.isVertical()) {
+        translateForm.y = (size.height - treeHeight * scaleRate) / 2;
+      }
+      if (this.isHorizontal()) {
+        translateForm.x = (size.width - treeHeight * scaleRate) / 2;
+      }
+      this.zoomSel = this.svgSel.append("g");
       this.svgSel
         .call(this.zoomExt)
-        .call(this.zoomExt.transform, d3.zoomIdentity);
-
-      d3.transition()
-        .duration(0)
-        .ease(d3.easeLinear)
-        .on("end", function() {
-            const box = (g.node() as SVGAElement).getBBox();
-            svg.attr("viewBox", `${box.x} ${box.y} ${Math.max(box.width, box.height)} ${Math.max(box.width, box.height)}`);
-        });
+        .call(this.zoomExt.transform, d3.zoomIdentity.translate(translateForm.x, translateForm.y).scale(scaleRate));
 
       // Setup all of the data-related elements.
-      this.linkSel = this.zoomSel.append("g").selectAll("path");
+      this.linkSel = this.zoomSel
+        .append("g")
+        .attr("fill", "none")
+        .attr("stroke", "#555")
+        .attr("stroke-opacity", 0.4)
+        .attr("stroke-width", 3)
+        .selectAll("path");
       this.nodeSel = this.zoomSel
         .append("g")
         .style("cursor", "pointer")
@@ -251,8 +274,10 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     }
 
     // Update the node positions.
-    if (this.nodeSel) {
-      this.nodeSel.attr("cx", ({ x }) => x || 0).attr("cy", ({ y }) => y || 0);
+    if (this.nodeSel && !this.isRadial()) {
+      this.nodeSel
+        .attr("cx", ({ x }) => x || 0)
+        .attr("cy", ({ y }) => y || 0);
     }
 
     // Update the selection positions.
@@ -260,17 +285,6 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       this.selectSel
         .attr("cx", ({ x }) => x || 0)
         .attr("cy", ({ y }) => y || 0);
-    }
-
-    // Update the text positions.
-    if (this.textSel) {
-      const calcOffset = (r: number) => 5 + 2 * r;
-      this.textSel
-        .attr("x", ({ x }) => x || 0)
-        .attr(
-          "y",
-          ({ data, y }) => (y || 0) + calcOffset(data.style?.fillRadius ?? this._defaultRadius)
-        );
     }
   }
 
@@ -359,10 +373,6 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
     this.linkSel = this.linkSel?.data(this._links)
       .join("path")
-      .attr("fill", "none")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.6)
-      .attr("stroke-width", 1)
       .attr("d", this._linkMethods.get(this._treeLayout ?? "none"));
 
     this.nodeSel = this.nodeSel?.data(this._nodes)
@@ -373,14 +383,21 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .attr("stroke", (d) => d.data.style?.strokeColor ?? "#53b853")
       .attr("stroke-width", (d) => d.data.style?.strokeWidth ?? 2.5);
 
+    const calcOffset = (d:ITreeVertex) => (d.children ? -1 : 1) * ((d.data.style?.fillRadius ?? this._defaultRadius) + 5);
+    const isVerticalTree = this.isVertical();
+
     this.textSel = this.textSel?.data(this._nodes)
       .join("text")
-      .attr("text-anchor", "middle")
-      .text((d) => d.data.label ?? "");
+      .attr("text-anchor", d => !d.children ? "start" : "end")
+      .text(d => d.data.label ?? "")
+      .attr("dy", "0.31em")
+      .attr("x", d => (d.x || 0) + calcOffset(d))
+      .attr("y", d => d.y || 0)
+      .attr("transform", d => isVerticalTree ? `rotate(${90} ${d.x || 0},${d.y || 0})` : null);
 
     if (this.isRadial()) {
-      this.nodeSel = this.nodeSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
-      this.textSel = this.textSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI + 180})`);
+      this.nodeSel?.attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y}, 0)`);
+      this.textSel?.attr("x", 0).attr("y", 0).attr("transform", d => `rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y + calcOffset(d)}, 0)`);
     }
 
     this.tick();
