@@ -1,6 +1,8 @@
 import * as d3 from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle } from "types";
 import { createSvg } from "utility";
+import { IGraphPlotLayout } from "./graph";
+import sampleData from "../stories/tree.sample";
 
 /** A more concise type to handle d3.Selection types. */
 type Selection<
@@ -47,11 +49,7 @@ interface ITreePlotData {
   /** The styling to be applied to the vertex. */
   style?: IPlotStyle;
 }
-/** Represents the layout information for the plot. */
-interface ITreePlotLayout extends IPlotLayout<"graph"> {
-  treeLayout?: TTreeLayout;
-}
-/** The events that may be emitted from a graph plot. */
+/** The events that may be emitted from a tree plot. */
 interface ITreePlotEvents {
   /** An event listener that is called when a node is called exactly once (does not fire on double click). */
   singleClickNode: (vertex: ITreeVertex) => void;
@@ -64,7 +62,7 @@ interface ITreePlotEvents {
 // TODO: Consider using WebCoLa to improve the performance of the visualization.
 // TODO: Make sure to add definitions to the SVG for optimal performance.
 /**
- * An object that persists, renders, and handles information about a graph plot.
+ * An object that persists, renders, and handles information about a tree plot.
  */
 class TreePlot extends EventDriver<ITreePlotEvents> {
   // #region DOM
@@ -85,7 +83,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
 
   // #region Data
   private _data: ITreePlotData[] = [];
-  private _layout: ITreePlotLayout;
+  private _layout: IGraphPlotLayout;
   private _treeLayout: TTreeLayout;
   private _roots: ITreeVertex[] = [];
   private _nodes: ITreeVertex[] = [];
@@ -114,24 +112,24 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   // #endregion
 
   /**
-   * Constructs a new graph plot.
+   * Constructs a new tree plot.
    * @param data Data to be plotted. Optional.
    * @param layout Layout information to be used. Optional.
    * @param container The container to hold the plot. Optional.
    */
   public constructor(
     data?: ITreePlotData[],
-    layout?: ITreePlotLayout,
-    container?: HTMLElement,
-    treeLayout?: TTreeLayout
+    layout?: IGraphPlotLayout,
+    container?: HTMLElement
   ) {
     super();
 
     // Set the data.
+    // this._data = sampleData;
     this._data = data ?? [];
     this._layout = layout ?? {};
     this._container = container;
-    this._treeLayout = treeLayout ?? "none";
+    this._treeLayout = "none";
 
     // Initialize the extensions.
     this.zoomExt = d3
@@ -162,17 +160,18 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   }
 
   private setupHierarchyTree(data: ITreePlotData, offsetY: number = 0) {
-    const root = d3.hierarchy(data) as ITreeVertex;
+    const root = d3.hierarchy(data).sort((a, b) => d3.ascending(a.data.label, b.data.label)) as ITreeVertex;
 
-    const totalLeaves = root.leaves().length > 20 ? root.leaves().length : 20;
-    const minSize = this._defaultRadius ** 2 * totalLeaves / (this.isRadial() ? Math.sqrt(this._defaultRadius) * Math.PI : 1);
+    const totalLeaves = root.leaves().length > 40 ? root.leaves().length : 40;
+    const minSize = this._defaultRadius ** 2 * totalLeaves / (1.5 * (this.isRadial() ? Math.sqrt(this._defaultRadius) * Math.PI : 1));
     const radius =  minSize;
     const treeWidth = radius / Math.sqrt(this._defaultRadius);
-    const treeHeight = radius / (Math.sqrt(this._defaultRadius) ** 2);
+    const treeHeight = radius / this._defaultRadius;
     const maxSize = this.isRadial() ? radius * 2 : Math.max(treeWidth, treeHeight);
 
     // Compute the layout.
     if (this.isRadial()) {
+      // d3.cluster().size([2 * Math.PI, radius - 100]) .separation((a, b) => (a.parent == b.parent ? 1 : 3) / a.depth)(root);
       d3.tree().size([2 * Math.PI, radius]).separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)(root);
     } else {
       d3.tree().size([treeWidth, treeHeight])(root);
@@ -219,7 +218,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     };
   }
 
-  /** Initializes the elements for the graph plot. */
+  /** Initializes the elements for the tree plot. */
   private setupElements() {
     if (this.isNone()) {
       this.delete();
@@ -237,7 +236,16 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       let prevMaxSize = 0;
 
       this._data.forEach((data, index) => {
-        const { treeWidth, treeHeight, maxSize } = this.setupHierarchyTree(data, this.isRadial() ? (prevMaxSize / 2 + index * padding) : contentHeight);
+        const {
+          treeWidth,
+          treeHeight,
+          maxSize
+        } = this.setupHierarchyTree(
+          data,
+          this.isRadial()
+            ? (prevMaxSize / 2 + index * padding)
+            : contentHeight
+        );
         prevMaxSize += maxSize;
         contentWidth = Math.max(contentWidth, this.isVertical() ? treeWidth : treeHeight);
         contentHeight += (this.isVertical() ? treeHeight : treeWidth) + padding;
@@ -390,11 +398,11 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
     this.setupElements();
   }
 
-  public get layout(): ITreePlotLayout {
+  public get layout(): IGraphPlotLayout {
     return { ...this._layout };
   }
 
-  public set layout(value: ITreePlotLayout) {
+  public set layout(value: IGraphPlotLayout) {
     this._layout = value;
 
     // Update the features dependent on layout.
@@ -414,7 +422,7 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
   // #endregion
 
   /**
-   * Renders a plot of the graph.
+   * Renders a plot of the tree.
    * Should be called when data is updated.
    */
   public render() {
@@ -437,22 +445,51 @@ class TreePlot extends EventDriver<ITreePlotEvents> {
       .attr("stroke-width", (d) => d.data.style?.strokeWidth ?? 2.5);
 
     const calcOffset = (d:ITreeVertex) => (d.children ? -1 : 1) * ((d.data.style?.fillRadius ?? this._defaultRadius) + 5);
-    const isVerticalTree = this.isVertical();
 
     this.textSel = this.textSel?.data(this._nodes)
       .join("text")
-      .attr("text-anchor", d => !d.children ? "start" : "end")
+      .attr("text-anchor", d => {
+        let children = d.data.children;
+        let check = d.children || (children && children.length > 0);
+        if (!this.isRadial()) {
+          return check ? "end" : "start";
+        }
+        return d.x < Math.PI === !check ? "start" : "end";
+      })
       .text(d => d.data.label ?? "")
       .attr("dy", "0.31em")
+      .style("font-weight", d => {
+        let children = d.data.children;
+        return d.children || (children && children.length > 0) ? "bold" : "normal";
+      })
       .attr("x", d => (d.x || 0) + calcOffset(d))
       .attr("y", d => d.y || 0)
-      .attr("transform", d => isVerticalTree ? `rotate(${90} ${d.x || 0},${d.y || 0})` : null);
+      .attr("transform", d =>
+        this.isVertical()
+          ? `rotate(${90} ${d.x || 0},${d.y || 0})`
+          : null
+      );
 
     if (this.isRadial()) {
-      this.nodeSel?.attr("transform", d => `translate(0, ${d.data.offset?.y || 0}) rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y}, 0)`);
+      this.nodeSel?.attr("transform", d => [
+        `translate(0, ${d.data.offset?.y || 0})`,
+        `rotate(${d.x * 180 / Math.PI - 90})`,
+        `translate(${d.y}, 0)`
+      ].join(' '));
       this.textSel?.attr("x", 0).attr("y", 0)
-        .attr("transform", d => `translate(0, ${d.data.offset?.y || 0}) rotate(${d.x * 180 / Math.PI - 90}) translate(${d.y + calcOffset(d)}, 0)`);
+        .attr("transform", d => [
+          `translate(0, ${d.data.offset?.y || 0})`,
+          `rotate(${d.x * 180 / Math.PI - 90})`,
+          `translate(${d.y + calcOffset(d)}, 0)`,
+          `${d.x >= Math.PI ? "rotate(180)" : ""}`,
+        ].join(' ')
+      );
     }
+
+    this.textSel?.clone().lower()
+      .attr("stroke", "white")
+      .attr("stroke-width", 4)
+      .text(d => d.data.label ?? "");
 
     this.tick();
   }
@@ -463,7 +500,6 @@ export type {
   ITreeVertex,
   ITreeEdge,
   ITreePlotData,
-  ITreePlotLayout,
   ITreePlotEvents,
   TTreeLayout,
 };
