@@ -93,7 +93,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
   // #region Data
   private _data: IScatterPlotData<IScatterPoint2d>;
   private _layout: IScatterPlotLayout;
-  
+
   private scaleX: d3.ScaleLinear<number, number>;
   private scaleY: d3.ScaleLinear<number, number>;
   private scaleColor:
@@ -213,7 +213,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
       this.pointsSel = this.zoomSel.append("g").selectAll("circle");
 
       // Add x axis label
-      this.svgSel.append("text")      
+      this.svgSel.append("text")
         .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
         .attr("y", size.height-5)
         .attr("text-anchor", "middle")
@@ -221,7 +221,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
         .text(<string> axisX.label);
 
       // Add y axis label
-      this.svgSel.append("text")      
+      this.svgSel.append("text")
         .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
         .attr("y", margin.right)
         .attr("text-anchor", "middle")
