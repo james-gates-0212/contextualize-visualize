@@ -337,20 +337,22 @@ class HistogramPlot extends EventDriver<IHistogramPlotEvents> {
     this.rectsSel = this.rectsSel?.data(this._data.data)
       .join("rect")
       .attr("fill", d => d.style?.fillColor ?? "#000")
-      .attr("r", d => d.style?.fillRadius ?? 5)
+      .attr("rx", d => d.style?.fillRadius ?? 0)
+      .attr("ry", d => d.style?.fillRadius ?? 0)
       .attr("stroke", d => d.style?.strokeColor ?? "#000")
+      .style("paint-order", "fill")
       .attr("stroke-width", d => d.style?.strokeWidth ?? 0);
 
     if (isHorizontal) {
-      this.rectsSel?.attr("x", d => scaleValues(d.min) + 1)
+      this.rectsSel?.attr("x", d => scaleValues(d.min) + (d.style?.strokeWidth ?? 0) + 1)
         .attr("y", d => scaleFreq(d.frequency))
-        .attr("width", d => Math.max(0, scaleValues(d.max) - scaleValues(d.min) - 1))
+        .attr("width", d => Math.max(0, scaleValues(d.max) - scaleValues(d.min) - (d.style?.strokeWidth ?? 0) - 1))
         .attr("height", d => scaleFreq(0) - scaleFreq(d.frequency));
     } else {
-      this.rectsSel?.attr("x", d => scaleValues(0) + 1)
-        .attr("y", d => scaleFreq(d.max))
-        .attr("width", d => scaleValues(d.frequency) - scaleValues(0) - 1)
-        .attr("height", d => Math.max(0, scaleFreq(d.min) - scaleFreq(d.max)));
+      this.rectsSel?.attr("x", d => scaleValues(0))
+        .attr("y", d => scaleFreq(d.max) + (d.style?.strokeWidth ?? 0) + 1)
+        .attr("width", d => scaleValues(d.frequency) - scaleValues(0))
+        .attr("height", d => Math.max(0, scaleFreq(d.min) - scaleFreq(d.max) - (d.style?.strokeWidth ?? 0) - 1));
     }
   }
 }

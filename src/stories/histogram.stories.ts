@@ -44,9 +44,9 @@ for (let i = 0; i < 10; i++) {
     max: prevPos + d,
     style: {
       fillColor: `rgba(0,180,255,.5)`,
-      fillRadius: Math.random() * 5,
+      fillRadius: 5,
       strokeColor: `rgba(0,90,180,1)`,
-      strokeWidth: 1,
+      // strokeWidth: 2,
     },
   });
   prevPos += d;
