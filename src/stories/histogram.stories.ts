@@ -1,4 +1,3 @@
-import * as d3 from "d3";
 import { Story, Meta } from "@storybook/html";
 import {
   IHistogramBin,
