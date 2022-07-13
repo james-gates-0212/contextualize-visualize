@@ -72,7 +72,7 @@ interface IGraphPlotEvents {
 }
 
 /** Tree Layouts */
-type TTreeLayout = "none" | "horizontal" | "vertical" | "radial/circular";
+type TTreeLayout = "none" | "horizontal" | "vertical" | "radial";
 
 /** Represents a vertex to plot. */
 interface ITreeVertex extends d3.HierarchyPointNode<ITreePlotData> {
@@ -173,7 +173,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
         .target(d => [d.target.x, d.target.y]),
     ],
     [
-      "radial/circular",
+      "radial",
       d3.linkRadial<ITreeEdge, ITreeVertex>()
         .angle(d => d.x)
         .radius(d => d.y),
@@ -488,7 +488,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   }
 
   private isRadialTreeLayout() {
-    return this._treeLayout === "radial/circular";
+    return this._treeLayout === "radial";
   }
 
   private isVerticalTreeLayout() {

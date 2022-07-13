@@ -45,7 +45,7 @@ export default {
       control: { type: "range", min: 0, max: 1.0, step: 0.01 },
     },
     treeLayout: {
-      options: ["none", "horizontal", "vertical", "radial/circular"],
+      options: ["none", "horizontal", "vertical", "radial"],
       control: {
         type: "radio",
       },
