@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { line } from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg } from "utility";
 
@@ -86,6 +87,8 @@ interface ITreeEdge extends d3.HierarchyPointLink<ITreeVertex> {
     x?: number;
     y?: number;
   };
+  /** Whether the vertex is directed. */
+  directed?: boolean;
 }
 
 /** Represents the data contained in the plot. */
@@ -159,26 +162,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   private _roots: ITreeVertex[] = [];
   private _nodes: ITreeVertex[] = [];
   private _links: ITreeEdge[] = [];
-  private _linkMethods = new Map<String, any>([
-    [
-      "vertical",
-      d3.linkVertical<ITreeEdge, number[]>()
-        .source(d => [d.source.x, d.source.y])
-        .target(d => [d.target.x, d.target.y]),
-    ],
-    [
-      "horizontal",
-      d3.linkHorizontal<ITreeEdge, number[]>()
-        .source(d => [d.source.x, d.source.y])
-        .target(d => [d.target.x, d.target.y]),
-    ],
-    [
-      "radial",
-      d3.linkRadial<ITreeEdge, ITreeVertex>()
-        .angle(d => d.x)
-        .radius(d => d.y),
-    ],
-  ]);
   private _defaultRadius = 15;
   // #endregion
 
@@ -363,12 +346,24 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       }
       this._nodes.push(node);
     });
+
+    const edges = this.data.edges;
+
     (root.links() as ITreeEdge[]).forEach(link => {
       if (this.isRadialTreeLayout()) {
         link.offset = {
           y: offsetY + (offsetY > 0 ? radius : 0),
         };
       }
+      link.directed = !!edges.find(edge =>
+        ((
+          edge.source === link.source.id &&
+          edge.target === link.target.id
+        ) || (
+          (edge.source as IGraphVertex).id === link.source.id &&
+          (edge.target as IGraphVertex).id === link.target.id
+        )) && edge.directed
+      );
       this._links.push(link);
     });
 
@@ -791,6 +786,13 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     this.forceExt.alpha(alpha).restart();
   }
 
+  private linkPoint(x: number, y: number) {
+    if (this.isRadialTreeLayout()) {
+      return [(y = +y) * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
+    }
+    return [x, y];
+  }
+
   /**
    * Renders a plot of the graph.
    * Should be called when data is updated.
@@ -798,11 +800,10 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   public render() {
     // Update the links.
     const links = this.isNoneTreeLayout() ? this._data.edges : this._links;
-    const linkType = this.isNoneTreeLayout() ? "line" : "path";
 
     this.linkSel = this.linkSel
       ?.data(links, ({ source, target }) => source + "-" + target)
-      .join(linkType)
+      .join("line")
 
       // Styling is applied based on defaults and the styling passed olong with the data.
       .attr("fill", (d) => d.style?.strokeColor ?? "#999")
@@ -858,7 +859,10 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       this.linkSel
         ?.attr("fill", "none")
         .attr("transform", d => `translate(0, ${d.offset?.y || 0})`)
-        .attr("d", this._linkMethods.get(this._treeLayout ?? "none"));
+        .attr("x1", d => this.linkPoint(d.source.x, d.source.y)[0])
+        .attr("y1", d => this.linkPoint(d.source.x, d.source.y)[1])
+        .attr("x2", d => this.linkPoint(d.target.x, d.target.y)[0])
+        .attr("y2", d => this.linkPoint(d.target.x, d.target.y)[1]);
 
       // Update for tree layout.
       if (this.isRadialTreeLayout()) {
