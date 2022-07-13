@@ -117,7 +117,7 @@ interface ITreePlotData {
   style?: IPlotStyle;
 }
 
-type GraphEdge = Selection<d3.BaseType, IGraphEdge | ITreeEdge, SVGGElement>;
+type GraphEdge = Selection<d3.BaseType, IGraphEdge, SVGGElement>;
 type GraphVertex = Selection<d3.BaseType, IGraphVertex | ITreeVertex, SVGGElement>;
 
 // TODO: Consider using WebCoLa to improve the performance of the visualization.
@@ -518,8 +518,8 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     if (this.textSel) {
       const calcOffset = (r: number) => 5 + 2 * r;
       this.textSel
-        .attr("x", ({ x }) => x || 0)
-        .attr("y", ({ style, y, data }) => (y || 0) + calcOffset(style?.fillRadius ?? data?.style?.fillRadius ?? this._defaultRadius));
+        .attr("x", (d) => d.x || 0)
+        .attr("y", (d) => (d.y || 0) + calcOffset((d as IGraphVertex).style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius));
     }
   }
 
@@ -802,7 +802,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     const links = this.isNoneTreeLayout() ? this._data.edges : this._links;
 
     this.linkSel = this.linkSel
-      ?.data(links, ({ source, target }) => source + "-" + target)
+      ?.data(links as IGraphEdge[], ({ source, target }) => source + "-" + target)
       .join("line")
 
       // Styling is applied based on defaults and the styling passed olong with the data.
@@ -820,25 +820,25 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       .join("circle")
 
       // Styling is applied based on defaults and the styling passed along with the data.
-      .attr("r", (d) => d.style?.fillRadius ?? d.data?.style?.fillRadius ?? this._defaultRadius)
-      .attr("fill", (d) => d.style?.fillColor ?? d.data?.style?.fillColor ?? "#a1d7a1")
-      .attr("fill-opacity", (d) => `${d.expanded ?? d.data?.expanded ? 0 : 100}%`)
-      .attr("stroke", (d) => d.style?.strokeColor ?? d.data?.style?.strokeColor ?? "#53b853")
-      .attr("stroke-width", (d) => d.style?.strokeWidth ?? d.data?.style?.strokeWidth ?? 2.5);
+      .attr("r", (d) => d.style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius)
+      .attr("fill", (d) => d.style?.fillColor ?? (d as ITreeVertex).data?.style?.fillColor ?? "#a1d7a1")
+      .attr("fill-opacity", (d) => `${d.expanded ?? (d as ITreeVertex).data?.expanded ? 0 : 100}%`)
+      .attr("stroke", (d) => d.style?.strokeColor ?? (d as ITreeVertex).data?.style?.strokeColor ?? "#53b853")
+      .attr("stroke-width", (d) => d.style?.strokeWidth ?? (d as ITreeVertex).data?.style?.strokeWidth ?? 2.5);
 
     // Update the selection.
     const selectedVertices = this._data.vertices.filter((d) => d.selected);
     this.selectSel = this.selectSel
       ?.data(selectedVertices, (d) => d.id)
       .join("circle")
-      .attr("r", (d) => (d.style?.fillRadius ?? d.data?.style?.fillRadius ?? this._defaultRadius) / 3)
+      .attr("r", (d) => (d.style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius) / 3)
       .attr("fill", "currentcolor");
 
     // Update the text.
     this.textSel = this.textSel
       ?.data(nodes, (d) => d.id)
       .join("text")
-      .text(({ label, data }) => label ?? data?.label ?? "")
+      .text(d => d.label ?? (d as ITreeVertex).data?.label ?? "")
       .attr("text-anchor", "middle");
 
     if (this.isNoneTreeLayout()) {
@@ -858,30 +858,30 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     } else {
       this.linkSel
         ?.attr("fill", "none")
-        .attr("transform", d => `translate(0, ${d.offset?.y || 0})`)
-        .attr("x1", d => this.projectPoint(d.source.x, d.source.y)[0])
-        .attr("y1", d => this.projectPoint(d.source.x, d.source.y)[1])
-        .attr("x2", d => this.projectPoint(d.target.x, d.target.y)[0])
-        .attr("y2", d => this.projectPoint(d.target.x, d.target.y)[1]);
+        .attr("transform", d => `translate(0, ${(d as ITreeEdge).offset?.y || 0})`)
+        .attr("x1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[0])
+        .attr("y1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[1])
+        .attr("x2", d => this.projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[0])
+        .attr("y2", d => this.projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[1]);
 
       // Update for tree layout.
       if (this.isRadialTreeLayout()) {
 
         this.nodeSel?.attr("transform", d => [
-          `translate(0, ${d.data?.offset?.y || 0})`,
-          `rotate(${d.x * 180 / Math.PI - 90})`,
+          `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
+          `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
           `translate(${d.y}, 0)`
         ].join(' '));
 
         const calcOffset = (r: number) => 5 + 2 * r;
 
         this.textSel?.attr("x", 0).attr("y", 0)
-          .attr("transform", d => [
-            `translate(0, ${d.data?.offset?.y || 0})`,
+          .attr("transform", (d) => [
+            `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
             `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
             `translate(${(d.y ?? 0)}, 0)`,
-            `rotate(${(-d.x ?? 0) * 180 / Math.PI + 90})`,
-            `translate(0, ${calcOffset(d.style?.fillRadius ?? d.data?.style?.fillRadius ?? this._defaultRadius)})`,
+            `rotate(${-(d.x ?? 0) * 180 / Math.PI + 90})`,
+            `translate(0, ${calcOffset((d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius)})`,
           ].join(' ')
         );
       }
