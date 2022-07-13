@@ -305,8 +305,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    */
   private buildHierarchyTreeLayout(data: ITreePlotData, offsetY: number = 0) {
     const root = d3.hierarchy(data).sort((a, b) => d3.ascending(a.data.label, b.data.label)) as ITreeVertex;
-    const minLeaves = 40;
-    const totalLeaves = root.leaves().length > minLeaves ? root.leaves().length : minLeaves;
+    const totalLeaves = root.descendants().length * 2;
     const minSize = this._defaultRadius ** 2 * totalLeaves / (1.5 * (this.isRadialTreeLayout() ? Math.sqrt(this._defaultRadius) * Math.PI : 1));
     const radius =  minSize;
     const treeWidth = radius / Math.sqrt(this._defaultRadius);
@@ -355,15 +354,15 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
           y: offsetY + (offsetY > 0 ? radius : 0),
         };
       }
-      link.directed = !!edges.find(edge =>
-        ((
-          edge.source === link.source.id &&
-          edge.target === link.target.id
+      link.directed = !!edges.find(edge => {
+        return edge.directed && ((
+          edge.source === link.source.data.id &&
+          edge.target === link.target.data.id
         ) || (
-          (edge.source as IGraphVertex).id === link.source.id &&
-          (edge.target as IGraphVertex).id === link.target.id
-        )) && edge.directed
-      );
+          (edge.source as IGraphVertex).id === link.source.data.id &&
+          (edge.target as IGraphVertex).id === link.target.data.id
+        ));
+      });
       this._links.push(link);
     });
 
@@ -526,7 +525,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    * Updates the plot by setting positions according to positions calculated by the force simulation.
    */
   private tick() {
-    console.log('tick');
     if (!this.isNoneTreeLayout()) return;
     // Update the link source and target positions.
     this.updateLinkSel();
