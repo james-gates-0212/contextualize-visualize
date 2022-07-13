@@ -84,6 +84,8 @@ VerticalHistogram.args = {
   },
 };
 
+let timeoutID: NodeJS.Timer;
+
 const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
   // Construct the container.
   let container: HTMLDivElement;
@@ -111,14 +113,21 @@ const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
     .map((_, k) => 1 + Math.sin(k / 5));
   let frequencySum = frequencies.reduce((x, y) => x + y, 0);
   frequencies = frequencies.map((f) => f / frequencySum);
-  setInterval(() => {
+
+  if (timeoutID) {
+    clearInterval(timeoutID);
+  }
+
+  timeoutID = setInterval(() => {
     let rand = Math.random();
     let index = 0;
     while (rand > frequencies[index]) {
       index++;
       rand -= frequencies[index];
     }
-    data.data[index].frequency++;
+    if (data.data[index]) {
+      data.data[index].frequency++;
+    }
 
     plot.data = data;
     plot.render();

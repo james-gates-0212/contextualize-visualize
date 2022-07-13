@@ -232,7 +232,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     // Perform setup tasks.
     this.setupElements();
     this.setupHierarchyTree();
-    this.setupSimulation();
   }
 
   /** Initializes the elements for the graph plot. */
@@ -302,6 +301,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
         .force<d3.ForceLink<IGraphVertex, IGraphEdge>>("link")
         ?.links(this._data.edges);
     } else {
+      this.forceExt.stop();
       this.buildHierarchyTreeData();
       this.buildHierarchyTrees();
     }
@@ -531,6 +531,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    * Updates the plot by setting positions according to positions calculated by the force simulation.
    */
   private tick() {
+    console.log('tick');
     if (!this.isNoneTreeLayout()) return;
     // Update the link source and target positions.
     this.updateLinkSel();
@@ -783,6 +784,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    */
   public simulate(alpha: number = 1.0) {
     if (!this.isNoneTreeLayout()) {
+      this.forceExt.stop();
       this.forceExt.alpha(alpha).stop();
       return;
     }

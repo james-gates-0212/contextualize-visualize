@@ -9,6 +9,7 @@ import {
   TTreeLayout,
 } from "plots";
 import "./plots.css";
+import { Timer } from "d3";
 
 interface IGraphPlot {
   /** The data to supply to the graph plot. */
@@ -186,6 +187,8 @@ TwoHubsOfNodes.args = {
   treeLayout: "none",
 };
 
+let timeoutID: NodeJS.Timer;
+
 const RealtimeTemplate: Story<IGraphPlot> = (args) => {
   // Construct the container.
   let container: HTMLDivElement;
@@ -212,7 +215,11 @@ const RealtimeTemplate: Story<IGraphPlot> = (args) => {
   }
   plot.render();
 
-  setInterval(() => {
+  if (timeoutID) {
+    clearInterval(timeoutID);
+  }
+
+  timeoutID = setInterval(() => {
     const length = data.vertices.length;
     const index = Math.floor(length * Math.random());
     data.vertices.push({ id: length.toString(), label: length.toString() });
