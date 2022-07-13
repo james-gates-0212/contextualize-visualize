@@ -3,6 +3,8 @@ import HistogramPlot from "./histogram";
 import LinePlot from "./line";
 
 export { LinePlot, HistogramPlot, GraphPlot };
+
 export * from "./graph";
-export * from "./scatter";
 export * from "./histogram";
+export * from "./line";
+export * from "./scatter";

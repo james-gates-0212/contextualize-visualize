@@ -1,4 +1,3 @@
-
 import * as d3 from "d3";
 import * as three from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
@@ -95,9 +94,6 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
     this._layout = layout ?? {};
     this._container = container;
 
-    // Initialize the scales.
-
-
     // Perform setup tasks.
     this.setupElements();
     this.setupScales();
@@ -133,6 +129,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
     if (extentColor[0] !== undefined && extentColor[1] !== undefined)
       this.scaleColor.domain(extentColor);
   }
+
   /** Initializes the elements for the scatter plot. */
   private setupElements() {
     if (this.container) {
