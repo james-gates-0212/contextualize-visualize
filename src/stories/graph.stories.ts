@@ -45,12 +45,7 @@ export default {
       control: { type: "range", min: 0, max: 1.0, step: 0.01 },
     },
     treeLayout: {
-      options: [
-        "none",
-        "horizontal",
-        "vertical",
-        "radial/circular",
-      ],
+      options: ["none", "horizontal", "vertical", "radial/circular"],
       control: {
         type: "radio",
       },
@@ -130,7 +125,6 @@ HierarchicalNodes.args = {
       { id: "1-1-3", label: "Child 3" },
       { id: "1-3-1", label: "Child 1" },
       { id: "1-3-2", label: "Child 2" },
-
     ],
     edges: [
       { source: "1", target: "1-1", directed: true },
@@ -189,5 +183,55 @@ TwoHubsOfNodes.args = {
     vertices,
     edges,
   },
+  treeLayout: "none",
+};
+
+const RealtimeTemplate: Story<IGraphPlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the graph plot.
+  const { layout, forceNode, forceLink, forceCenter, treeLayout } = args;
+  const data: IGraphPlotData = { vertices: [], edges: [] };
+  const plot = new GraphPlot(data, layout, container);
+  if (forceNode) plot.forceNode = d3.forceManyBody().strength(-forceNode);
+  if (forceLink) {
+    plot.forceLink = d3
+      .forceLink<IGraphVertex, IGraphEdge>()
+      .id(({ id }) => id)
+      .strength(forceLink);
+  }
+  if (forceCenter) {
+    plot.forceX = d3.forceX(0).strength(forceCenter);
+    plot.forceY = d3.forceY(0).strength(forceCenter);
+  }
+  if (treeLayout) {
+    plot.treeLayout = treeLayout;
+  }
+  plot.render();
+
+  setInterval(() => {
+    const length = data.vertices.length;
+    const index = Math.floor(length * Math.random());
+    data.vertices.push({ id: length.toString(), label: length.toString() });
+    if (length) {
+      data.edges.push({
+        source: index.toString(),
+        target: length.toString(),
+        directed: true,
+      });
+    }
+    plot.data = data;
+    plot.simulate();
+    plot.render();
+  }, 1000);
+
+  return container;
+};
+
+export const RealtimeNodes = RealtimeTemplate.bind({});
+RealtimeNodes.args = {
   treeLayout: "none",
 };

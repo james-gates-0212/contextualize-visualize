@@ -62,7 +62,7 @@ HorizontalHistogram.args = {
       y: {
         label: "Frequency",
         showLines: true,
-      }
+      },
     },
   },
 };
@@ -80,7 +80,53 @@ VerticalHistogram.args = {
       },
       y: {
         label: "Vertical Histogram",
-      }
+      },
     },
   },
 };
+
+const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the Histogram plot.
+  const { layout } = args;
+  const data: IHistogramPlotData = {
+    data: Array(20)
+      .fill(null)
+      .map((_, k) => ({
+        frequency: 0,
+        min: k,
+        max: k + 1,
+      })),
+  };
+  const plot = new HistogramPlot(data, layout, container);
+
+  plot.render();
+
+  let frequencies: number[];
+  frequencies = Array(20)
+    .fill(0)
+    .map((_, k) => 1 + Math.sin(k / 5));
+  let frequencySum = frequencies.reduce((x, y) => x + y, 0);
+  frequencies = frequencies.map((f) => f / frequencySum);
+  setInterval(() => {
+    let rand = Math.random();
+    let index = 0;
+    while (rand > frequencies[index]) {
+      index++;
+      rand -= frequencies[index];
+    }
+    data.data[index].frequency++;
+
+    plot.data = data;
+    plot.render();
+  }, 50);
+
+  return container;
+};
+
+export const RealtimeHistogram = RealtimeTemplate.bind({});
+RealtimeTemplate.args = {};
