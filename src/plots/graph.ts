@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import { line } from "d3";
 import { EventDriver, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg } from "utility";
 
