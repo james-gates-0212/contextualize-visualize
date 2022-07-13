@@ -305,11 +305,13 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
    */
   private buildHierarchyTreeLayout(data: ITreePlotData, offsetY: number = 0) {
     const root = d3.hierarchy(data).sort((a, b) => d3.ascending(a.data.label, b.data.label)) as ITreeVertex;
-    const totalLeaves = root.descendants().length * 2;
-    const minSize = this._defaultRadius ** 2 * totalLeaves / (1.5 * (this.isRadialTreeLayout() ? Math.sqrt(this._defaultRadius) * Math.PI : 1));
+    const descendants = root.descendants().length;
+    const leaves = root.leaves().length;
+    const multiple = descendants <= leaves ** 2 ? leaves : descendants;
+    const minSize = this._defaultRadius ** 2 * multiple / (this.isRadialTreeLayout() ? 2 * Math.PI : 1);
     const radius =  minSize;
-    const treeWidth = radius / Math.sqrt(this._defaultRadius);
-    const treeHeight = radius / this._defaultRadius;
+    const treeWidth = radius * 2 / Math.sqrt(this._defaultRadius);
+    const treeHeight = radius * 2 / this._defaultRadius;
     const maxSize = this.isRadialTreeLayout() ? radius * 2 : Math.max(treeWidth, treeHeight);
 
     // Compute the layout.
@@ -784,7 +786,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     this.forceExt.alpha(alpha).restart();
   }
 
-  private linkPoint(x: number, y: number) {
+  private projectPoint(x: number, y: number) {
     if (this.isRadialTreeLayout()) {
       return [(y = +y) * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
     }
@@ -857,10 +859,10 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       this.linkSel
         ?.attr("fill", "none")
         .attr("transform", d => `translate(0, ${d.offset?.y || 0})`)
-        .attr("x1", d => this.linkPoint(d.source.x, d.source.y)[0])
-        .attr("y1", d => this.linkPoint(d.source.x, d.source.y)[1])
-        .attr("x2", d => this.linkPoint(d.target.x, d.target.y)[0])
-        .attr("y2", d => this.linkPoint(d.target.x, d.target.y)[1]);
+        .attr("x1", d => this.projectPoint(d.source.x, d.source.y)[0])
+        .attr("y1", d => this.projectPoint(d.source.x, d.source.y)[1])
+        .attr("x2", d => this.projectPoint(d.target.x, d.target.y)[0])
+        .attr("y2", d => this.projectPoint(d.target.x, d.target.y)[1]);
 
       // Update for tree layout.
       if (this.isRadialTreeLayout()) {
