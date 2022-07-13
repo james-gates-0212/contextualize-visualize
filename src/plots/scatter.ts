@@ -2,19 +2,11 @@
 import * as d3 from "d3";
 import * as three from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { EventDriver, IPlotLayout, IPlotStyle } from "types";
+import { EventDriver, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 // TODO: Try to automatically compute margins using canvas context (https://stackoverflow.com/questions/29031659/calculate-width-of-text-before-drawing-the-text).
 //       This requires an additional 'canvas' package. We could also use 'string-pixel-width'.
-
-/** A more concise type to handle d3.Selection types. */
-type Selection<
-  GElement extends d3.BaseType,
-  Datum = unknown,
-  PElement extends d3.BaseType = null,
-  PDatum = undefined
-> = d3.Selection<GElement, Datum, PElement, PDatum>;
 
 /** The type of datum for each scatter plot point. */
 interface IScatterPoint {
@@ -75,30 +67,14 @@ interface IScatterPlotEvents {
 /**
  * An object that persists, renders, and handles information about a scatter plot in 2D.
  */
-class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
+class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents> {
   // #region DOM
-  private _container?: HTMLElement;
-
-  private svgSel?: Selection<SVGSVGElement, unknown, HTMLElement>;
-  private zoomSel?: Selection<SVGGElement, unknown, HTMLElement>;
-  private xAxisSel?: Selection<SVGGElement, unknown, HTMLElement>;
-  private yAxisSel?: Selection<SVGGElement, unknown, HTMLElement>;
   private pointsSel?: Selection<SVGGElement, IScatterPoint2d, SVGGElement>;
-  // #endregion
-
-  // #region Extensions
-  private zoomExt: d3.ZoomBehavior<SVGSVGElement, unknown>;
   // #endregion
 
   // #region Data
   private _data: IScatterPlotData<IScatterPoint2d>;
-  private _layout: IScatterPlotLayout;
 
-  private scaleX: d3.ScaleLinear<number, number>;
-  private scaleY: d3.ScaleLinear<number, number>;
-  private scaleColor:
-    | d3.ScaleSequential<string>
-    | d3.ScaleOrdinal<number, string>;
   // #endregion
 
   /**
@@ -120,24 +96,7 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
     this._container = container;
 
     // Initialize the scales.
-    this.scaleX = d3.scaleLinear();
-    this.scaleY = d3.scaleLinear();
-    this.scaleColor = d3.scaleSequential();
 
-    // Initialize the extensions.
-    this.zoomExt = d3
-      .zoom<SVGSVGElement, unknown>()
-      .filter((event: any) => !event.button && event.type !== "dblclick")
-      .on("zoom", ({ transform }: { transform: d3.ZoomTransform }) => {
-        const scaleXZoom = transform.rescaleX(this.scaleX);
-        const scaleYZoom = transform.rescaleY(this.scaleY);
-        this.xAxis(this.xAxisSel, scaleXZoom);
-        this.yAxis(this.yAxisSel, scaleYZoom);
-        this.xAxisGrid(this.xAxisSel, scaleXZoom);
-        this.yAxisGrid(this.yAxisSel, scaleYZoom);
-
-        this.zoomSel?.attr("transform", transform.toString());
-      });
 
     // Perform setup tasks.
     this.setupElements();
@@ -173,17 +132,6 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
     this.scaleColor = findColormap(this._data.colormap);
     if (extentColor[0] !== undefined && extentColor[1] !== undefined)
       this.scaleColor.domain(extentColor);
-
-    // Reset the axes.
-    if (this.zoomSel) {
-      const transform = d3.zoomTransform(this.zoomSel.node()!);
-      const scaleXZoom = transform.rescaleX(this.scaleX);
-      const scaleYZoom = transform.rescaleY(this.scaleY);
-      this.xAxis(this.xAxisSel, scaleXZoom);
-      this.yAxis(this.yAxisSel, scaleYZoom);
-      this.xAxisGrid(this.xAxisSel, scaleXZoom);
-      this.yAxisGrid(this.yAxisSel, scaleYZoom);
-    }
   }
   /** Initializes the elements for the scatter plot. */
   private setupElements() {
@@ -228,42 +176,6 @@ class ScatterPlot2d extends EventDriver<IScatterPlotEvents> {
         .attr("transform", "rotate(-90)")
         .attr("fill", axisLabelColor)
         .text(<string> axisY.label);
-    }
-  }
-
-  /** Creates an x-axis for the plot. */
-  private xAxis(g: typeof this.xAxisSel, scale: typeof this.scaleX) {
-    const { size, margin } = createSvg(undefined, this.layout);
-    g?.attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
-      d3.axisBottom(scale)
-    );
-  }
-  /** Creates an y-axis for the plot. */
-  private yAxis(g: typeof this.yAxisSel, scale: typeof this.scaleY) {
-    const { margin } = createSvg(undefined, this.layout);
-    g?.attr("transform", `translate(${margin.left}, 0)`).call(
-      d3.axisLeft(scale)
-    );
-  }
-
-  /** Creates an x-axis grid for the plot. */
-  private xAxisGrid(g: typeof this.xAxisSel, scale: typeof this.scaleX) {
-    const { size, margin } = createSvg(undefined, this.layout);
-    const activeXAxisGrid = this.layout.axes?.x?.showLines;
-    if (activeXAxisGrid) {
-      g?.attr('opacity', '0.5').attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
-        d3.axisBottom(scale).tickSize(-(size.height-margin.top-margin.bottom))
-      );
-    }
-  }
-  /** Creates an y-axis grid for the plot. */
-  private yAxisGrid(g: typeof this.yAxisSel, scale: typeof this.scaleY) {
-    const { size, margin } = createSvg(undefined, this.layout);
-    const activeYAxisGrid = this.layout.axes?.y?.showLines;
-    if (activeYAxisGrid) {
-      g?.attr('opacity', '0.5').attr("transform", `translate(${margin.left}, 0)`).call(
-        d3.axisLeft(scale).tickSize(-(size.width-margin.left-margin.right))
-      );
     }
   }
 

@@ -11,7 +11,7 @@ interface IHistogramPlot {
   /** The data to supply the Histogram plot. */
   data?: IHistogramPlotData<IHistogramBin>;
   /** The layout to use for the Histogram plot. */
-  layout: IHistogramPlotLayout;
+  layout?: IHistogramPlotLayout;
 }
 
 export default {
@@ -35,21 +35,17 @@ const Template: Story<IHistogramPlot> = (args) => {
 };
 
 let data: IHistogramBin[] = [];
-let prevPos: number = 0;
-for (let i = 0; i < 10; i++) {
-  const d = Math.round(Math.random() ** 2 * 111);
+for (let i = 0; i < 50; i++) {
   data.push({
-    frequency: Math.random() * 10,
-    min: prevPos,
-    max: prevPos + d,
+    frequency: i ** 2,
+    min: i / 2,
+    max: i / 2 + 0.5,
     style: {
-      fillColor: `rgba(0,180,255,.5)`,
-      fillRadius: 5,
-      strokeColor: `rgba(0,90,180,1)`,
-      // strokeWidth: 2,
+      // fillColor: `rgba(0,180,255,.5)`,
+      // strokeColor: `rgba(0,90,180,1)`,
+      // strokeWidth: 0,
     },
   });
-  prevPos += d;
 }
 
 export const HorizontalHistogram = Template.bind({});
@@ -58,11 +54,13 @@ HorizontalHistogram.args = {
     data: data,
   },
   layout: {
+    orientation: "horizontal",
     axes: {
       x: {
         label: "Horizontal Histogram",
       },
       y: {
+        label: "Frequency",
         showLines: true,
       }
     },
@@ -75,6 +73,7 @@ VerticalHistogram.args = {
     data: data,
   },
   layout: {
+    orientation: "vertical",
     axes: {
       x: {
         showLines: true,
