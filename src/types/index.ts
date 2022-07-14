@@ -1,7 +1,9 @@
+import BasePlot from "./BasePlot";
 import PlotWithAxis from "./PlotWithAxis";
 import EventDriver from "./EventDriver";
 
 export {
+  BasePlot,
   PlotWithAxis,
   EventDriver,
 };

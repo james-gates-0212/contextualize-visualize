@@ -59,14 +59,9 @@ interface IScatterPlotEvents extends IPlotEvents<IScatterPoint> {}
 /**
  * An object that persists, renders, and handles information about a scatter plot in 2D.
  */
-class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents> {
+class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, IScatterPlotLayout, IScatterPlotEvents> {
   // #region DOM
   private pointsSel?: Selection<SVGGElement, IScatterPoint2d, SVGGElement>;
-  // #endregion
-
-  // #region Data
-  private _data: IScatterPlotData<IScatterPoint2d>;
-
   // #endregion
 
   /**
@@ -80,7 +75,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
     layout?: IScatterPlotLayout,
     container?: HTMLElement,
   ) {
-    super();
+    super(data, layout, container);
 
     // Set the data.
     this._data = data ?? { data: [] };
@@ -127,10 +122,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
-      const { svg, size, margin } = createSvg(this.container, this.layout);
-      const axisX = this.layout.axes?.x ?? {};
-      const axisY = this.layout.axes?.y ?? {};
-      const axisLabelColor = this.layout.style?.color ?? "";
+      const { svg } = createSvg(this.container, this.layout);
 
       this.svgSel = svg;
       this.svgSel.on("click", (event) => {
@@ -143,29 +135,10 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
         .call(this.zoomExt)
         .call(this.zoomExt.transform, d3.zoomIdentity);
 
-      // Create the axes.
-      this.xAxisSel = this.svgSel.append("g");
-      this.yAxisSel = this.svgSel.append("g");
-
       // Create the scatter plot elements.
       this.pointsSel = this.zoomSel.append("g").selectAll("circle");
 
-      // Add x axis label
-      this.svgSel.append("text")
-        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
-        .attr("y", size.height-5)
-        .attr("text-anchor", "middle")
-        .attr("fill", axisLabelColor)
-        .text(<string> axisX.label);
-
-      // Add y axis label
-      this.svgSel.append("text")
-        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
-        .attr("y", margin.right)
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .attr("fill", axisLabelColor)
-        .text(<string> axisY.label);
+      this.setupAxisElements();
     }
   }
 
@@ -207,17 +180,17 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
 
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
-    return this._container;
+    return super.container;
   }
   public set container(value: HTMLElement | undefined) {
-    this._container = value;
+    super.container = value;
     this.setupElements();
   }
   public get layout(): IScatterPlotLayout {
-    return { ...this._layout };
+    return { ...super.layout };
   }
   public set layout(value: IScatterPlotLayout) {
-    this._layout = value;
+    super.layout = value;
     this.setupScales();
 
     // Update the features dependent on layout.
@@ -227,13 +200,13 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotLayout, IScatterPlotEvents>
     }
   }
   public get data(): IScatterPlotData<IScatterPoint2d> {
-    return { ...this._data };
+    return { ...super.data };
   }
   public set data(value: IScatterPlotData<IScatterPoint2d>) {
-    this._data = value;
+    super.data = value;
     this.setupScales();
   }
-  //#endregion
+  // #endregion
 
   /** Renders a plot of the graph. */
   public render() {
@@ -423,7 +396,7 @@ class ScatterPlot3d extends EventDriver<IScatterPlotEvents> {
     this._data = value;
     this.setupScales();
   }
-  //#endregion
+  // #endregion
 
   /** Renders a plot of the graph. */
   public render() {

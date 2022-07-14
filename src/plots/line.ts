@@ -40,14 +40,13 @@ interface ILinePlotEvents extends IPlotEvents<ILinePoint> {}
 /**
  * An object that persists, renders, and handles information about a line plot in 2D.
  */
-class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
+class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEvents> {
   // #region DOM
   private pointsSel?: Selection<SVGGElement, ILinePoint, SVGGElement>;
   private linesSel?: Selection<SVGGElement, TLineSegment, SVGGElement>;
   // #endregion
 
   // #region Data
-  private _data: ILinePlotData<ILinePoint>;
   private _lines: TLineSegment[];
   // #endregion
 
@@ -63,11 +62,11 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
    * @param container THe container to hold the plot. Optional.
    */
   public constructor(
-    data?: ILinePlotData<ILinePoint>,
+    data?: ILinePlotData,
     layout?: ILinePlotLayout,
     container?: HTMLElement,
   ) {
-    super();
+    super(data, layout, container);
 
     // Set the data.
     this._container = container;
@@ -117,10 +116,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
-      const { svg, size, margin } = createSvg(this.container, this.layout);
-      const axisX = this.layout.axes?.x ?? {};
-      const axisY = this.layout.axes?.y ?? {};
-      const axisLabelColor = this.layout.style?.color ?? "";
+      const { svg } = createSvg(this.container, this.layout);
 
       this.svgSel = svg;
       this.svgSel.on("click", (event) => {
@@ -133,30 +129,11 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
         .call(this.zoomExt)
         .call(this.zoomExt.transform, d3.zoomIdentity);
 
-      // Create the axes.
-      this.xAxisSel = this.svgSel.append("g");
-      this.yAxisSel = this.svgSel.append("g");
-
       // Create the line plot elements.
       this.linesSel = this.zoomSel.append("g").selectAll("line");
       this.pointsSel = this.zoomSel.append("g").selectAll("circle");
 
-      // Add x axis label
-      this.svgSel.append("text")
-        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
-        .attr("y", size.height-5)
-        .attr("text-anchor", "middle")
-        .attr("fill", axisLabelColor)
-        .text(axisX.label ?? "");
-
-      // Add y axis label
-      this.svgSel.append("text")
-        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
-        .attr("y", margin.right)
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .attr("fill", axisLabelColor)
-        .text(axisY.label ?? "");
+      this.setupAxisElements();
     }
   }
 
@@ -198,18 +175,17 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
 
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
-    return this._container;
+    return super.container;
   }
   public set container(value: HTMLElement | undefined) {
-    this._container = value;
+    super.container = value;
     this.setupElements();
   }
-
   public get layout(): ILinePlotLayout {
-    return { ...this._layout };
+    return { ...super.layout };
   }
   public set layout(value: ILinePlotLayout) {
-    this._layout = value;
+    super.layout = value;
     this.setupScales();
 
     // Update the features dependent on layout.
@@ -218,15 +194,14 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
       this.svgSel.attr("viewBox", viewBox).attr("style", style);
     }
   }
-
   public get data(): ILinePlotData<ILinePoint> {
-    return { ...this._data };
+    return { ...super.data };
   }
-  public set data(value: ILinePlotData<ILinePoint>) {
-    this._data = value;
+  public set data(value: ILinePlotData) {
+    super.data = value;
     this.setupScales();
   }
-  //#endregion
+  // #endregion
 
   /** Renders a plot of the graph. */
   public render() {

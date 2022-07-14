@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { EventDriver, IPlotEvents, IPlotLayout, IPlotStyle, Selection } from "types";
+import { BasePlot, IPlotEvents, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg } from "utility";
 
 /** Represents a locator element for the plot. */
@@ -62,7 +62,14 @@ interface IGraphPlotData {
 interface IGraphPlotLayout extends IPlotLayout<"graph"> {}
 
 /** The events that may be emitted from a graph plot. */
-interface IGraphPlotEvents extends IPlotEvents<IGraphVertex> {}
+interface IGraphPlotEvents {
+  /** An event listener that is called when a node is called exactly once (does not fire on double click). */
+  singleClickNode: (vertex: IGraphVertex) => void;
+  /** An event listener that is called when a node is clicked exactly twice (does not fire on single click). */
+  doubleClickNode: (vertex: IGraphVertex) => void;
+  /** An event listener that is called when the empty space is clicked. */
+  clickSpace: () => void;
+}
 
 /** Tree Layouts */
 type TTreeLayout = "none" | "horizontal" | "vertical" | "radial";
@@ -117,13 +124,9 @@ type GraphVertex = Selection<d3.BaseType, IGraphVertex | ITreeVertex, SVGGElemen
 /**
  * An object that persists, renders, and handles information about a graph plot.
  */
-class GraphPlot extends EventDriver<IGraphPlotEvents> {
+class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEvents> {
   // #region DOM
   /** The container to hold the plot. The plot can still update without the container. */
-  private _container?: HTMLElement;
-
-  private svgSel?: Selection<SVGSVGElement, unknown, HTMLElement>;
-  private zoomSel?: Selection<SVGGElement, unknown, HTMLElement>;
   private linkSel?: GraphEdge;
   private nodeSel?: GraphVertex;
   private textSel?: GraphVertex;
@@ -133,7 +136,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
 
   // #region Extensions
   private forceExt: d3.Simulation<IGraphVertex, IGraphEdge>;
-  private zoomExt: d3.ZoomBehavior<SVGSVGElement, unknown>;
   // #endregion
 
   // #region Forces
@@ -141,11 +143,6 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
   private _forceLink: d3.Force<IGraphVertex, IGraphEdge>;
   private _forceX: d3.Force<IGraphVertex, IGraphEdge>;
   private _forceY: d3.Force<IGraphVertex, IGraphEdge>;
-  // #endregion
-
-  // #region Data
-  private _data: IGraphPlotData;
-  private _layout: IGraphPlotLayout;
   // #endregion
 
   // #region Hierarchy Tree
@@ -168,7 +165,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     layout?: IGraphPlotLayout,
     container?: HTMLElement
   ) {
-    super();
+    super(data, layout, container);
 
     // Set the data.
     this._data = data ?? { vertices: [], edges: [] };
@@ -244,9 +241,11 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       // Notice we disable the double click zoom behavior because we allow double click to be used to
       // expand/collapse nodes.
       this.zoomSel = this.svgSel.append("g");
-      this.svgSel
-        .call(this.zoomExt)
-        .call(this.zoomExt.transform, d3.zoomIdentity);
+      if (this.zoomExt) {
+        this.svgSel
+          .call(this.zoomExt)
+          .call(this.zoomExt.transform, d3.zoomIdentity);
+      }
 
       // Setup all of the data-related elements.
       this.linkSel = this.zoomSel.append("g").selectAll("line");
@@ -652,7 +651,8 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     const padding = 0.25;
     const [xMin, xMax] = xExtent as [number, number];
     const [yMin, yMax] = yExtent as [number, number];
-    this.zoomSel
+    if (this.zoomExt) {
+      this.zoomSel
       .transition()
       .duration(500)
       .call(
@@ -664,6 +664,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
           )
           .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
       );
+    }
   }
   // #endregion
 
@@ -711,17 +712,17 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
 
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
-    return this._container;
+    return super.container;
   }
   public set container(value: HTMLElement | undefined) {
-    this._container = value;
+    super.container = value;
     this.setupElements();
   }
   public get layout(): IGraphPlotLayout {
-    return { ...this._layout };
+    return { ...super.layout };
   }
   public set layout(value: IGraphPlotLayout) {
-    this._layout = value;
+    super.layout = value;
 
     // Update the features dependent on layout.
     if (this.svgSel) {
@@ -730,7 +731,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
     }
   }
   public get data(): IGraphPlotData {
-    return { ...this._data };
+    return { ...super.data };
   }
   public set data(value: IGraphPlotData) {
     // We want to preserve positioning and velocity of nodes that are still in the graph.
@@ -760,7 +761,7 @@ class GraphPlot extends EventDriver<IGraphPlotEvents> {
       )
       .map((edge) => ({ ...edge }));
 
-    this._data = { vertices: nodes, edges: links };
+    super.data = { vertices: nodes, edges: links };
     this.setupSimulation();
   }
   // #endregion

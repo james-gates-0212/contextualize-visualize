@@ -35,13 +35,9 @@ interface IHistogramPlotEvents extends IPlotEvents<IHistogramBin> {}
 /**
  * An object that persists, renders, and handles information about a histogram plot in 2D.
  */
-class HistogramPlot extends PlotWithAxis<IHistogramPlotLayout, IHistogramPlotEvents> {
+class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayout, IHistogramPlotEvents> {
   // #region DOM
   private rectsSel?: Selection<SVGGElement, IHistogramBin, SVGGElement>;
-  // #endregion
-
-  // #region Data
-  private _data: IHistogramPlotData<IHistogramBin>;
   // #endregion
 
   /**
@@ -51,11 +47,11 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotLayout, IHistogramPlotEve
    * @param container THe container to hold the plot. Optional.
    */
   public constructor(
-    data?: IHistogramPlotData<IHistogramBin>,
+    data?: IHistogramPlotData,
     layout?: IHistogramPlotLayout,
     container?: HTMLElement,
   ) {
-    super();
+    super(data, layout, container);
 
     // Set the data.
     this._data = data ?? { data: [] };
@@ -122,63 +118,33 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotLayout, IHistogramPlotEve
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
-      const { svg, size, margin } = createSvg(this.container, this.layout);
-      const axisX = this.layout.axes?.x ?? {};
-      const axisY = this.layout.axes?.y ?? {};
-      const axisLabelColor = this.layout.style?.color ?? "";
+      const { svg } = createSvg(this.container, this.layout);
 
       this.svgSel = svg;
-      this.svgSel.on("click", (event) => {
-        if (event.target === event.currentTarget) this.notify("clickSpace");
-      });
 
       // Setup the zoom behavior.
       this.zoomSel = this.svgSel.append("g");
 
-      // Create the axes.
-      this.xAxisSel = this.svgSel.append("g")
-        .attr("transform", `translate(0, ${size.height - margin.bottom})`)
-        .call(d3.axisBottom(this.scaleX).tickSizeOuter(0));
-
-      this.yAxisSel = this.svgSel.append("g")
-        .attr("transform", `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(this.scaleY));
-
       // Create the histogram plot elements.
       this.rectsSel = this.zoomSel.append("g").selectAll("rect");
 
-      // Add x axis label
-      this.svgSel.append("text")
-        .attr("x", margin.left + (size.width - margin.left - margin.right) / 2)
-        .attr("y", size.height - 5)
-        .attr("text-anchor", "middle")
-        .attr("fill", axisLabelColor)
-        .text(axisX.label ?? "");
-
-      // Add y axis label
-      this.svgSel.append("text")
-        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
-        .attr("y", margin.right)
-        .attr("text-anchor", "middle")
-        .attr("transform", "rotate(-90)")
-        .attr("fill", axisLabelColor)
-        .text(axisY.label ?? "");
+      this.setupAxisElements();
     }
   }
 
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
-    return this._container;
+    return super.container;
   }
   public set container(value: HTMLElement | undefined) {
-    this._container = value;
+    super.container = value;
     this.setupElements();
   }
   public get layout(): IHistogramPlotLayout {
-    return { ...this._layout };
+    return { ...super.layout };
   }
   public set layout(value: IHistogramPlotLayout) {
-    this._layout = value;
+    super.layout = value;
     this.setupScales();
 
     // Update the features dependent on layout.
@@ -187,14 +153,14 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotLayout, IHistogramPlotEve
       this.svgSel.attr("viewBox", viewBox).attr("style", style);
     }
   }
-  public get data(): IHistogramPlotData<IHistogramBin> {
-    return { ...this._data };
+  public get data(): IHistogramPlotData {
+    return { ...super.data };
   }
-  public set data(value: IHistogramPlotData<IHistogramBin>) {
-    this._data = value;
+  public set data(value: IHistogramPlotData) {
+    super.data = value;
     this.setupScales();
   }
-  //#endregion
+  // #endregion
 
   /** Renders a plot of the graph. */
   public render() {

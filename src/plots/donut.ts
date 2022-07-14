@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { BasePlot, IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 /** The type of datum for each donut plot point. */
@@ -36,7 +36,7 @@ interface IDonutPlotEvents extends IPlotEvents<IDonutBin> {}
 /**
  * An object that persists, renders, and handles information about a donut plot in 2D.
  */
-class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
+class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEvents> {
   // #region DOM
   private arcsSel?:       Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
   private labelsSel?:     Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
@@ -46,7 +46,6 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
   // #endregion
 
   // #region Data
-  private _data: IDonutPlotData<IDonutBin>;
   private _values: string[];
   // #endregion
 
@@ -57,11 +56,11 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
    * @param container THe container to hold the plot. Optional.
    */
   public constructor(
-    data?: IDonutPlotData<IDonutBin>,
+    data?: IDonutPlotData,
     layout?: IDonutPlotLayout,
     container?: HTMLElement,
   ) {
-    super();
+    super(data, layout, container);
 
     // Set the data.
     this._container = container;
@@ -116,18 +115,18 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
 
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
-    return this._container;
+    return super.container;
   }
   public set container(value: HTMLElement | undefined) {
-    this._container = value;
+    super.container = value;
     this.setupElements();
   }
 
   public get layout(): IDonutPlotLayout {
-    return { ...this._layout };
+    return { ...super.layout };
   }
   public set layout(value: IDonutPlotLayout) {
-    this._layout = value;
+    super.layout = value;
     this.setupScales();
 
     // Update the features dependent on layout.
@@ -137,14 +136,14 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
     }
   }
 
-  public get data(): IDonutPlotData<IDonutBin> {
-    return { ...this._data };
+  public get data(): IDonutPlotData {
+    return { ...super.data };
   }
-  public set data(value: IDonutPlotData<IDonutBin>) {
-    this._data = value;
+  public set data(value: IDonutPlotData) {
+    super.data = value;
     this.setupScales();
   }
-  //#endregion
+  // #endregion
 
   /** Renders a plot of the graph. */
   public render() {
