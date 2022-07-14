@@ -147,7 +147,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
         .attr("y", size.height-5)
         .attr("text-anchor", "middle")
         .attr("fill", axisLabelColor)
-        .text(<string> axisX.label);
+        .text(axisX.label ?? "");
 
       // Add y axis label
       this.svgSel.append("text")
@@ -156,7 +156,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .attr("fill", axisLabelColor)
-        .text(<string> axisY.label);
+        .text(axisY.label ?? "");
     }
   }
 
