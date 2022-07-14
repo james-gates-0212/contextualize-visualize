@@ -1,10 +1,10 @@
 import * as d3 from "d3";
-import { IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 type TLineSegment = ILinePoint[];
 
-/** The type of datum for each Line plot point. */
+/** The type of datum for each line plot point. */
 interface ILinePoint {
   /** A unique identifier for the point. */
   id: string;
@@ -32,20 +32,13 @@ interface ILinePlotData<TDatum extends ILinePoint = ILinePoint> {
 }
 
 /** Represents the layout information for the plot. */
-interface ILinePlotLayout extends IPlotLayout<"Line"> {}
+interface ILinePlotLayout extends IPlotLayout<"line"> {}
 
-/** The events that may be emitted from a Line plot. */
-interface ILinePlotEvents {
-  /** An event listener that is called when a point is called exactly once (does not fire on double click). */
-  singleClickPoint: (point: ILinePoint) => void;
-  /** An event listener that is called when a point is clicked exactly twice (does not fire on single click). */
-  doubleClickPoint: (point: ILinePoint) => void;
-  /** An event listener that is called when the empty space is clicked. */
-  clickSpace: () => void;
-}
+/** The events that may be emitted from a line plot. */
+interface ILinePlotEvents extends IPlotEvents<ILinePoint> {}
 
 /**
- * An object that persists, renders, and handles information about a Line plot in 2D.
+ * An object that persists, renders, and handles information about a line plot in 2D.
  */
 class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
   // #region DOM
@@ -64,7 +57,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
     .y(d => this.scaleY(d[1]));
 
   /**
-   * Constructs a new Line plot.
+   * Constructs a new line plot.
    * @param data Data to be plotted. Optional.
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
@@ -87,7 +80,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
     this.setupScales();
   }
 
-  /** Initializes the scales used to transform data for the Line plot. */
+  /** Initializes the scales used to transform data for the line plot. */
   private setupScales() {
     // Get the metrics for the SVG element.
     const { size, margin } = createSvg(undefined, this.layout);
@@ -120,7 +113,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
     this._lines = this._data.data.map((pt, i, data) => i === data.length - 1 ? [pt] : [pt, data[i + 1]]);
   }
 
-  /** Initializes the elements for the Line plot. */
+  /** Initializes the elements for the line plot. */
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
@@ -144,7 +137,7 @@ class LinePlot extends PlotWithAxis<ILinePlotLayout, ILinePlotEvents> {
       this.xAxisSel = this.svgSel.append("g");
       this.yAxisSel = this.svgSel.append("g");
 
-      // Create the Line plot elements.
+      // Create the line plot elements.
       this.linesSel = this.zoomSel.append("g").selectAll("line");
       this.pointsSel = this.zoomSel.append("g").selectAll("circle");
 

@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg } from "utility";
 
 /** The type of datum for each histogram plot point. */
@@ -30,14 +30,7 @@ interface IHistogramPlotLayout extends IPlotLayout<"histogram"> {
 }
 
 /** The events that may be emitted from a histogram plot. */
-interface IHistogramPlotEvents {
-  /** An event listener that is called when a point is called exactly once (does not fire on double click). */
-  singleClickPoint: (point: IHistogramBin) => void;
-  /** An event listener that is called when a point is clicked exactly twice (does not fire on single click). */
-  doubleClickPoint: (point: IHistogramBin) => void;
-  /** An event listener that is called when the empty space is clicked. */
-  clickSpace: () => void;
-}
+interface IHistogramPlotEvents extends IPlotEvents<IHistogramBin> {}
 
 /**
  * An object that persists, renders, and handles information about a histogram plot in 2D.

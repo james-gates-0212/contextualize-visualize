@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { EventDriver, IPlotLayout, IPlotStyle, Selection } from "types";
+import { EventDriver, IPlotEvents, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg } from "utility";
 
 /** Represents a locator element for the plot. */
@@ -62,14 +62,7 @@ interface IGraphPlotData {
 interface IGraphPlotLayout extends IPlotLayout<"graph"> {}
 
 /** The events that may be emitted from a graph plot. */
-interface IGraphPlotEvents {
-  /** An event listener that is called when a node is called exactly once (does not fire on double click). */
-  singleClickNode: (vertex: IGraphVertex) => void;
-  /** An event listener that is called when a node is clicked exactly twice (does not fire on single click). */
-  doubleClickNode: (vertex: IGraphVertex) => void;
-  /** An event listener that is called when the empty space is clicked. */
-  clickSpace: () => void;
-}
+interface IGraphPlotEvents extends IPlotEvents<IGraphVertex> {}
 
 /** Tree Layouts */
 type TTreeLayout = "none" | "horizontal" | "vertical" | "radial";

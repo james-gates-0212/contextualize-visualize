@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import * as three from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { EventDriver, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { EventDriver, IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 // TODO: Try to automatically compute margins using canvas context (https://stackoverflow.com/questions/29031659/calculate-width-of-text-before-drawing-the-text).
@@ -54,14 +54,7 @@ interface IScatterPlotData<TDatum extends IScatterPoint = IScatterPoint> {
 /** Represents the layout information for the plot. */
 interface IScatterPlotLayout extends IPlotLayout<"scatter"> {}
 /** The events that may be emitted from a scatter plot. */
-interface IScatterPlotEvents {
-  /** An event listener that is called when a point is called exactly once (does not fire on double click). */
-  singleClickPoint: (point: IScatterPoint) => void;
-  /** An event listener that is called when a point is clicked exactly twice (does not fire on single click). */
-  doubleClickPoint: (point: IScatterPoint) => void;
-  /** An event listener that is called when the empty space is clicked. */
-  clickSpace: () => void;
-}
+interface IScatterPlotEvents extends IPlotEvents<IScatterPoint> {}
 
 /**
  * An object that persists, renders, and handles information about a scatter plot in 2D.
