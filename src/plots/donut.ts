@@ -10,8 +10,6 @@ interface IDonutBin {
   /** The value of the bin. Determines the size of the bin. */
   value: number;
 
-  valueOf(): number;
-
   /** The optional styles to apply to the bin. */
   style?: IPlotStyle;
 }
@@ -152,11 +150,11 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
   public render() {
     const { size } = createSvg(undefined, this._layout);
     const dim = Math.min(size.width, size.height);
-    const I = d3.range(this._data.data.length);
     const radius = dim / 2;
-    const innerRadius = radius * 3.5 / 4;
-    const outerRadius = radius * 2.5 / 4;
-    const valueRadius = radius * 3 / 4;
+    const innerRadius = radius * 2.5 / 4;
+    const outerRadius = radius / 4;
+    const middle = (d: d3.PieArcDatum<IDonutBin>) =>
+      (d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius;
     const cornerRadius = 5;
     const padAngle = 2 / radius;
 
@@ -168,13 +166,13 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
 
     const arc = d3.arc<d3.PieArcDatum<IDonutBin>>()
       .innerRadius(innerRadius)
-      .outerRadius(outerRadius)
+      .outerRadius(d => (d.data.style?.fillRadius ?? outerRadius) + innerRadius)
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
     const valueArc = d3.arc<d3.PieArcDatum<IDonutBin>>()
-      .innerRadius(valueRadius)
-      .outerRadius(valueRadius)
+      .innerRadius(middle)
+      .outerRadius(middle)
       .padAngle(padAngle);
 
     const that = this;
@@ -183,6 +181,8 @@ class DonutPlot extends PlotWithAxis<IDonutPlotLayout, IDonutPlotEvents> {
       ?.data(pie)
       .join("path")
       .attr("fill", (d, i, a) => d.data.style?.fillColor ?? this.scaleColor(i / a.length))
+      .attr("stroke", d => d.data.style?.strokeColor ?? "currentColor")
+      .attr("stroke-width", d => d.data.style?.strokeWidth ?? 0)
       .attr("d", arc)
       .each(function(d, i) {
         // search pattern for everything between the start and the first capital L
