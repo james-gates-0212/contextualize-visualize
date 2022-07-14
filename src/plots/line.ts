@@ -125,9 +125,11 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
 
       // Setup the zoom behavior.
       this.zoomSel = this.svgSel.append("g");
-      this.svgSel
-        .call(this.zoomExt)
-        .call(this.zoomExt.transform, d3.zoomIdentity);
+      if (this.zoomExt) {
+        this.svgSel
+          .call(this.zoomExt)
+          .call(this.zoomExt.transform, d3.zoomIdentity);
+      }
 
       // Create the line plot elements.
       this.linesSel = this.zoomSel.append("g").selectAll("line");
@@ -158,18 +160,20 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
     const padding = 0.25;
     const [xMin, xMax] = xExtent as [number, number];
     const [yMin, yMax] = yExtent as [number, number];
-    this.zoomSel
-      .transition()
-      .duration(500)
-      .call(
-        this.zoomExt.transform as any,
-        d3.zoomIdentity
-          .scale(
-            (1 + padding) *
-              Math.max((xMax - xMin) / width, (yMax - yMin) / height)
-          )
-          .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
-      );
+    if (this.zoomExt) {
+      this.zoomSel
+        .transition()
+        .duration(500)
+        .call(
+          this.zoomExt.transform as any,
+          d3.zoomIdentity
+            .scale(
+              (1 + padding) *
+                Math.max((xMax - xMin) / width, (yMax - yMin) / height)
+            )
+            .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
+        );
+    }
   }
   // #endregion
 

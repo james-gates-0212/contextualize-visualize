@@ -653,17 +653,17 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     const [yMin, yMax] = yExtent as [number, number];
     if (this.zoomExt) {
       this.zoomSel
-      .transition()
-      .duration(500)
-      .call(
-        this.zoomExt.transform as any,
-        d3.zoomIdentity
-          .scale(
-            (1 + padding) *
-              Math.max((xMax - xMin) / width, (yMax - yMin) / height)
-          )
-          .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
-      );
+        .transition()
+        .duration(500)
+        .call(
+          this.zoomExt.transform as any,
+          d3.zoomIdentity
+            .scale(
+              (1 + padding) *
+                Math.max((xMax - xMin) / width, (yMax - yMin) / height)
+            )
+            .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
+        );
     }
   }
   // #endregion
