@@ -91,6 +91,7 @@ SimpleDonut.args = {
   layout: {
     label: "Population by age",
     percent: false,
+    radialLabels: true,
   },
 };
 
@@ -102,6 +103,7 @@ PercentageDonut.args = {
   layout: {
     label: "Population by age",
     percent: true,
+    radialLabels: true,
   },
 };
 
@@ -139,6 +141,7 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
   // Set up the Donut plot.
   const layout: IDonutPlotLayout = {
     label: "Voting for a winner",
+    radialLabels: true,
   };
 
   const countries = [

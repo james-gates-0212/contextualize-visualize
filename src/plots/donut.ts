@@ -26,8 +26,10 @@ interface IDonutPlotData<TDatum extends IDonutBin = IDonutBin> {
 interface IDonutPlotLayout extends IPlotLayout<"donut"> {
   /** Text label for the donut layout. */
   label?: string;
-  /** Whether to display as a percent. */
+  /** Whether the values are to display as a percent. */
   percent?: boolean;
+  /** Whether the labels are to rotate its pie angle. */
+  radialLabels?: boolean;
 }
 
 /** The events that may be emitted from a donut plot. */
@@ -114,7 +116,6 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
         .datum(this._data.data)
         .selectAll("path");
       this.labelsSel = this.contentSel.append("g")
-        .attr("font-weight", "bold")
         .datum(this._data.data)
         .selectAll("text");
       this.valuesSel = this.contentSel.append("g")
@@ -165,6 +166,7 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     const outerRadius = radius / 4;
     const cornerRadius = 5;
     const padAngle = 2 / radius;
+    const realOuterRadius = (d: d3.PieArcDatum<IDonutBin>) => (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
 
     const pie = d3.pie<IDonutBin>()
       .startAngle(Math.PI / 180)
@@ -174,7 +176,13 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
 
     const arc = d3.arc<d3.PieArcDatum<IDonutBin>>()
       .innerRadius(innerRadius)
-      .outerRadius(d => (d.data.style?.fillRadius ?? outerRadius) + innerRadius)
+      .outerRadius(realOuterRadius)
+      .cornerRadius(cornerRadius)
+      .padAngle(padAngle);
+
+    const arcLabel = d3.arc<d3.PieArcDatum<IDonutBin>>()
+      .innerRadius(d => realOuterRadius(d) + 15)
+      .outerRadius(d => realOuterRadius(d) + 15)
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
@@ -194,31 +202,36 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     this.labelsSel = this.labelsSel
       ?.data(pie)
       .join("text")
-      .attr("dy", "0.31em")
+      .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
-      .attr("transform", d => [
-        `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius + 15})`,
-        `rotate(${need2Flip(d) ? 180 : 0})`,
-      ].join(" ").trim())
+      .attr("transform", d => this._layout.radialLabels
+        ? [
+          `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
+          `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius + 15})`,
+          `rotate(${need2Flip(d) ? 180 : 0})`,
+        ].join(" ").trim()
+        : `translate(${arcLabel.centroid(d)})`)
       .text(d => d.data.value > 0 ? (d.data.label ?? "") : "");
 
     this.valuesSel = this.valuesSel
       ?.data(pie)
       .join("text")
-      .attr("dy", "0.31em")
+      .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
-      .attr("transform", d => [
-        `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius})`,
-        `rotate(${need2Flip(d) ? 180 : 0})`,
-      ].join(" ").trim())
+      .attr("transform", d => this._layout.radialLabels
+        ? [
+          `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
+          `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius})`,
+          `rotate(${need2Flip(d) ? 180 : 0})`,
+        ].join(" ").trim()
+        : `translate(${arc.centroid(d)})`)
       .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "");
 
     if (this._layout.label) {
       this.layoutLabel = this.layoutLabel
         ?.data([this._layout.label])
         .join("text")
+        .attr("alignment-baseline", "middle")
         .attr("text-anchor", "middle")
         .text(d => d);
     }
