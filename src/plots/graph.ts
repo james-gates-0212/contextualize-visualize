@@ -895,4 +895,5 @@ export type {
   IGraphPlotData,
   IGraphPlotLayout,
   IGraphPlotEvents,
+  TTreeLayout,
 };

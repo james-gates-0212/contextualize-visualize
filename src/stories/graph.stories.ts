@@ -9,7 +9,6 @@ import {
   TTreeLayout,
 } from "plots";
 import "./plots.css";
-import { Timer } from "d3";
 
 interface IGraphPlot {
   /** The data to supply to the graph plot. */
