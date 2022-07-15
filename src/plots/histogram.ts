@@ -26,6 +26,7 @@ interface IHistogramPlotData<TDatum extends IHistogramBin = IHistogramBin> {
 
 /** Represents the layout information for the plot. */
 interface IHistogramPlotLayout extends IPlotLayout<"histogram"> {
+  /** Display method for horizontal or vertical. */
   orientation: "horizontal" | "vertical";
 }
 
@@ -172,7 +173,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
   public render() {
     const scaleValues = this.scaleX;
     const scaleFreq = this.scaleY;
-    // Update the points.
+    // Update the bins.
     this.rectsSel = this.rectsSel?.data(this._data.data)
       .join("rect")
       .attr("fill", d => d.style?.fillColor ?? "#53b853")
@@ -181,15 +182,15 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .attr("stroke-width", d => d.style?.strokeWidth ?? 0);
 
     if (this.isHorizontal()) {
-      this.rectsSel?.attr("x", d => scaleValues(d.min) + (d.style?.strokeWidth ?? 0) + 1)
-        .attr("y", d => scaleFreq(d.frequency))
-        .attr("width", d => Math.max(0, scaleValues(d.max) - scaleValues(d.min) - (d.style?.strokeWidth ?? 0) - 1))
-        .attr("height", d => scaleFreq(0) - scaleFreq(d.frequency));
+      this.rectsSel?.attr("x", d => scaleValues(d.min) + (d.style?.strokeWidth ?? 0) / 2 + 1)
+        .attr("y", d => scaleFreq(d.frequency) + (d.style?.strokeWidth ?? 0) / 2)
+        .attr("width", d => Math.max(1, scaleValues(d.max) - scaleValues(d.min) - (d.style?.strokeWidth ?? 0) - 1))
+        .attr("height", d => scaleFreq(0) - scaleFreq(d.frequency) - (d.style?.strokeWidth ?? 0));
     } else {
-      this.rectsSel?.attr("x", d => scaleValues(0))
-        .attr("y", d => scaleFreq(d.max) + (d.style?.strokeWidth ?? 0) + 1)
-        .attr("width", d => scaleValues(d.frequency) - scaleValues(0))
-        .attr("height", d => Math.max(0, scaleFreq(d.min) - scaleFreq(d.max) - (d.style?.strokeWidth ?? 0) - 1));
+      this.rectsSel?.attr("x", d => scaleValues(0) + (d.style?.strokeWidth ?? 0) / 2)
+        .attr("y", d => scaleFreq(d.max) + (d.style?.strokeWidth ?? 0) / 2 + 1)
+        .attr("width", d => scaleValues(d.frequency) - scaleValues(0) - (d.style?.strokeWidth ?? 0))
+        .attr("height", d => Math.max(1, scaleFreq(d.min) - scaleFreq(d.max) - (d.style?.strokeWidth ?? 0) - 1));
     }
   }
 }
