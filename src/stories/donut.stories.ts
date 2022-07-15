@@ -36,23 +36,12 @@ const Template: Story<IDonutPlot> = (args) => {
 const data:IDonutBin[] = [{
   label: "<5",
   value: 19912018,
-  style: {
-    fillColor: "#ccc",
-    fillRadius: 40,
-  },
 }, {
   label: "5-9",
   value: 20501982,
-  style: {
-    fillRadius: 50,
-  },
 }, {
   label: "10-14",
   value: 20679786,
-  style: {
-    fillColor: "red",
-    fillRadius: 60,
-  },
 }, {
   label: "15-19",
   value: 21354481,
@@ -86,7 +75,6 @@ export const SimpleDonut = Template.bind({});
 SimpleDonut.args = {
   data: {
     data: data,
-    colormap: "inferno",
   },
   layout: {
     label: "Population by age",
@@ -94,6 +82,74 @@ SimpleDonut.args = {
     radialLabels: true,
   },
 };
+
+export const ColormapDonut = Template.bind({});
+ColormapDonut.args = {
+  data: {
+    data: data,
+    colormap: "viridis",
+  },
+  layout: {
+    label: "Population by age",
+    percent: false,
+    radialLabels: true,
+  },
+};
+
+export const CustomStyleDonut = Template.bind({});
+CustomStyleDonut.args = {
+  data: {
+    data: [{
+      label: "<5",
+      value: 19912018,
+      style: {
+        fillColor: "red",
+        fillRadius: 40,
+      },
+    }, {
+      label: "5-9",
+      value: 20501982,
+      style: {
+        fillColor: "green",
+        fillRadius: 50,
+      },
+    }, {
+      label: "10-14",
+      value: 20679786,
+      style: {
+        fillColor: "blue",
+        fillRadius: 60,
+      },
+    },{
+      label: "15-20",
+      value: 30679786,
+      style: {
+        fillColor: "#ccc",
+        fillRadius: 70,
+      },
+    },{
+      label: "20-25",
+      value: 25679786,
+      style: {
+        fillColor: "#7ff",
+        fillRadius: 50,
+      },
+    },{
+      label: "25-30",
+      value: 50679786,
+      style: {
+        fillColor: "#354",
+        fillRadius: 30,
+      },
+    },],
+  },
+  layout: {
+    label: "Population by age",
+    percent: false,
+    radialLabels: true,
+  },
+};
+
 
 export const PercentageDonut = Template.bind({});
 PercentageDonut.args = {

@@ -10,6 +10,9 @@ interface IDonutBin {
   /** The value of the bin. Determines the size of the bin. */
   value: number;
 
+  /** Whether the bin is selected. */
+  selected?: boolean;
+
   /** The optional styles to apply to the bin. */
   style?: IPlotStyle;
 }
@@ -35,9 +38,9 @@ interface IDonutPlotLayout extends IPlotLayout<"donut"> {
 /** The events that may be emitted from a donut plot. */
 interface IDonutPlotEvents {
   /** An event listener that is called when a bin is called exactly once (does not fire on double click). */
-  singleClickBin: (bin: IDonutBin) => void;
+  singleClickBin: (bin: d3.PieArcDatum<IDonutBin>) => void;
   /** An event listener that is called when a bin is clicked exactly twice (does not fire on single click). */
-  doubleClickBin: (bin: IDonutBin) => void;
+  doubleClickBin: (bin: d3.PieArcDatum<IDonutBin>) => void;
   /** An event listener that is called when the empty space is clicked. */
   clickSpace: () => void;
 }
@@ -78,6 +81,7 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
 
     // Perform setup tasks.
     this.setupElements();
+    this.setupEvents();
     this.setupScales();
   }
 
@@ -107,22 +111,43 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       const { svg, size } = createSvg(this.container, this.layout);
 
       this.svgSel = svg
-        .attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height]);
+        .attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height])
+        .on("click", (e: PointerEvent) => {
+          if (e.detail === 1) {
+            this.notify("clickSpace");
+          }
+        });
 
       this.contentSel = this.svgSel.append("g");
 
       // Create the donut plot elements.
       this.arcsSel = this.contentSel.append("g")
+        .style("cursor", "pointer")
         .datum(this._data.data)
         .selectAll("path");
       this.labelsSel = this.contentSel.append("g")
+        .style("cursor", "pointer")
         .datum(this._data.data)
         .selectAll("text");
       this.valuesSel = this.contentSel.append("g")
+        .style("cursor", "pointer")
         .datum(this._data.data)
         .selectAll("text");
       this.layoutLabel = this.contentSel.append("g").selectAll("text");
     }
+  }
+
+  /** Binds the events. */
+  private setupEvents() {
+    this
+      .on("singleClickBin", bin => {
+        bin.data.selected = !bin.data.selected;
+        this.render();
+      })
+      .on("clickSpace", () => {
+        this._data.data.forEach(bin => bin.selected = false);
+        this.render();
+      });
   }
 
   // #region Plot Getters/Setters
@@ -167,9 +192,15 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     const cornerRadius = 5;
     const padAngle = 2 / radius;
     const gapLabel = 15;
+    const selectedMoreRadius = 30;
 
+    const calcInnerRadius = (d: d3.PieArcDatum<IDonutBin>) =>
+      innerRadius
+        - (d.data.selected ? selectedMoreRadius : 0)
     const calcOuterRadius = (d: d3.PieArcDatum<IDonutBin>) =>
-      (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
+      (d.data.style?.fillRadius ?? outerRadius)
+        + (d.data.selected ? selectedMoreRadius : 0)
+        + innerRadius;
 
     const pie = d3.pie<IDonutBin>()
       .startAngle(Math.PI / 180)
@@ -178,7 +209,7 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .sort(null);
 
     const arc = d3.arc<d3.PieArcDatum<IDonutBin>>()
-      .innerRadius(innerRadius)
+      .innerRadius(calcInnerRadius)
       .outerRadius(calcOuterRadius)
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
@@ -189,13 +220,23 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
+    const singleClickBin = (e: PointerEvent, d: d3.PieArcDatum<IDonutBin>) => {
+      switch (e.detail) {
+        case 1:
+          e.stopPropagation();
+          this.notify("singleClickBin", d);
+          break;
+      }
+    };
+
     this.arcsSel = this.arcsSel
       ?.data(pie)
       .join("path")
       .attr("fill", (d, i, a) => d.data.style?.fillColor ?? this.scaleColor(i / a.length))
       .attr("stroke", d => d.data.style?.strokeColor ?? "currentColor")
       .attr("stroke-width", d => d.data.style?.strokeWidth ?? 0)
-      .attr("d", arc);
+      .attr("d", arc)
+      .on("click", singleClickBin);
 
     const need2Flip = (d: d3.PieArcDatum<IDonutBin>) => (
       (d.startAngle + d.endAngle) > Math.PI &&
@@ -216,7 +257,9 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
             ? `rotate(${arcRotate(d)})`
             : "",
         ].join(" ").trim())
-      .text(d => d.data.value > 0 ? (d.data.label ?? "") : "");
+      .text(d => d.data.value > 0 ? (d.data.label ?? "") : "")
+      .attr("font-weight", d => d.data.selected ? "bold" : null)
+      .on("click", singleClickBin);
 
     this.valuesSel = this.valuesSel
       ?.data(pie)
@@ -229,7 +272,9 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
             ? `rotate(${arcRotate(d)})`
             : "",
         ].join(" ").trim())
-      .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "");
+      .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "")
+      .attr("font-weight", d => d.data.selected ? "bold" : null)
+      .on("click", singleClickBin);
 
     if (this._layout.label) {
       this.layoutLabel = this.layoutLabel

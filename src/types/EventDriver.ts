@@ -29,6 +29,7 @@ class EventDriver<T> {
 
   private ensureListenersReady<K extends EventKey<T>>(event: K) {
     if (this.listeners[event] === undefined) this.listeners[event] = new Set();
+    return this;
   }
 
   /**
@@ -42,6 +43,7 @@ class EventDriver<T> {
       listener,
       once: true,
     });
+    return this;
   }
   /**
    * Adds an event listener to the object that fires multiple times.
@@ -54,6 +56,7 @@ class EventDriver<T> {
       listener,
       once: false,
     });
+    return this;
   }
   /**
    * Removes an event listener from the object.
@@ -65,6 +68,7 @@ class EventDriver<T> {
     this.listeners[event]!.forEach((entry) => {
       if (entry.listener === listener) this.listeners[event]!.delete(entry);
     });
+    return this;
   }
 
   /**
@@ -81,6 +85,7 @@ class EventDriver<T> {
       entry.listener(...args);
       if (entry.once) this.listeners[event]!.delete(entry);
     });
+    return this;
   }
 }
 
