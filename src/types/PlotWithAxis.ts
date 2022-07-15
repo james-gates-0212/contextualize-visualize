@@ -101,7 +101,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
         .attr("y", size.height-5)
         .attr("text-anchor", "middle")
         .attr("fill", axisLabelColor)
-        .text(<string> axisX.label);
+        .text(axisX.label ?? "");
 
       // Add y axis label
       this.svgSel.append("text")
@@ -110,7 +110,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .attr("fill", axisLabelColor)
-        .text(<string> axisY.label);
+        .text(axisY.label ?? "");
     }
   }
 
@@ -146,22 +146,22 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
   /** Creates an x-axis grid for the plot. */
   protected xAxisGrid(g: AxisSel | undefined, scale: AxisScale) {
     const { size, margin } = createSvg(undefined, this._layout);
-    const activeXAxisGrid = (this._layout as any).axes?.x?.showLines;
+    const activeXAxisGrid = this._layout.axes?.x?.showLines;
     if (activeXAxisGrid) {
-      g?.attr('opacity', '0.5').attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
+      g?.attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
         d3.axisBottom(scale).tickSize(-(size.height-margin.top-margin.bottom))
-      );
+      ).selectAll("line").attr('opacity', '0.5');
     }
   }
 
   /** Creates an y-axis grid for the plot. */
   protected yAxisGrid(g: AxisSel | undefined, scale: AxisScale) {
     const { size, margin } = createSvg(undefined, this._layout);
-    const activeYAxisGrid = (this._layout as any).axes?.y?.showLines;
+    const activeYAxisGrid = this._layout.axes?.y?.showLines;
     if (activeYAxisGrid) {
-      g?.attr('opacity', '0.5').attr("transform", `translate(${margin.left}, 0)`).call(
+      g?.attr("transform", `translate(${margin.left}, 0)`).call(
         d3.axisLeft(scale).tickSize(-(size.width-margin.left-margin.right))
-      );
+      ).selectAll("line").attr('opacity', '0.5');
     }
   }
 
