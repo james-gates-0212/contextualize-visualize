@@ -166,7 +166,10 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     const outerRadius = radius / 4;
     const cornerRadius = 5;
     const padAngle = 2 / radius;
-    const realOuterRadius = (d: d3.PieArcDatum<IDonutBin>) => (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
+    const gapLabel = 15;
+
+    const calcOuterRadius = (d: d3.PieArcDatum<IDonutBin>) =>
+      (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
 
     const pie = d3.pie<IDonutBin>()
       .startAngle(Math.PI / 180)
@@ -176,13 +179,13 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
 
     const arc = d3.arc<d3.PieArcDatum<IDonutBin>>()
       .innerRadius(innerRadius)
-      .outerRadius(realOuterRadius)
+      .outerRadius(calcOuterRadius)
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
     const arcLabel = d3.arc<d3.PieArcDatum<IDonutBin>>()
-      .innerRadius(d => realOuterRadius(d) + 15)
-      .outerRadius(d => realOuterRadius(d) + 15)
+      .innerRadius(d => calcOuterRadius(d) + gapLabel)
+      .outerRadius(d => calcOuterRadius(d) + gapLabel)
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
@@ -199,18 +202,20 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       (d.startAngle + d.endAngle) < Math.PI * 3
     );
 
+    const arcRotate = (d: d3.PieArcDatum<IDonutBin>) =>
+      (d.startAngle + d.endAngle) / 2 * 180 / Math.PI + (need2Flip(d) ? 180 : 0);
+
     this.labelsSel = this.labelsSel
       ?.data(pie)
       .join("text")
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
-      .attr("transform", d => this._layout.radialLabels
-        ? [
-          `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-          `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius + 15})`,
-          `rotate(${need2Flip(d) ? 180 : 0})`,
-        ].join(" ").trim()
-        : `translate(${arcLabel.centroid(d)})`)
+      .attr("transform", d => [
+          `translate(${arcLabel.centroid(d)})`,
+          this._layout.radialLabels
+            ? `rotate(${arcRotate(d)})`
+            : "",
+        ].join(" ").trim())
       .text(d => d.data.value > 0 ? (d.data.label ?? "") : "");
 
     this.valuesSel = this.valuesSel
@@ -218,13 +223,12 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .join("text")
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
-      .attr("transform", d => this._layout.radialLabels
-        ? [
-          `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-          `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius})`,
-          `rotate(${need2Flip(d) ? 180 : 0})`,
-        ].join(" ").trim()
-        : `translate(${arc.centroid(d)})`)
+      .attr("transform", d => [
+          `translate(${arc.centroid(d)})`,
+          this._layout.radialLabels
+            ? `rotate(${arcRotate(d)})`
+            : "",
+        ].join(" ").trim())
       .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "");
 
     if (this._layout.label) {
