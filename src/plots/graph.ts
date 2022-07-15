@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { BasePlot, IPlotEvents, IPlotLayout, IPlotStyle, Selection } from "types";
+import { BasePlot, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg } from "utility";
 
 /** Represents a locator element for the plot. */

@@ -11,6 +11,5 @@ export {
 export * from "./Selection";
 
 export * from "./IPlotAxis";
-export * from "./IPlotEvents";
 export * from "./IPlotLayout";
 export * from "./IPlotStyle";

@@ -84,6 +84,42 @@ VerticalHistogram.args = {
   },
 };
 
+data = [];
+let prevPos: number = 0;
+for (let i = 0; i < 10; i++) {
+  const d = Math.round(Math.random() ** 2 * 111);
+  data.push({
+    frequency: Math.random() * 10,
+    min: prevPos,
+    max: prevPos + d,
+    style: {
+      fillColor: `rgba(0,180,255,.5)`,
+      fillRadius: 5,
+      strokeColor: `rgba(0,90,180,1)`,
+      // strokeWidth: 2,
+    },
+  });
+  prevPos += d;
+}
+
+export const RandomHistogram = Template.bind({});
+RandomHistogram.args = {
+  data: {
+    data: data,
+  },
+  layout: {
+    orientation: "horizontal",
+    axes: {
+      x: {
+        showLines: true,
+      },
+      y: {
+        label: "Random Histogram",
+      },
+    },
+  },
+};
+
 let timeoutID: NodeJS.Timer;
 
 const RealtimeTemplate: Story<IHistogramPlot> = (args) => {

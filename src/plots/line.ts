@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 type TLineSegment = ILinePoint[];
@@ -35,7 +35,14 @@ interface ILinePlotData<TDatum extends ILinePoint = ILinePoint> {
 interface ILinePlotLayout extends IPlotLayout<"line"> {}
 
 /** The events that may be emitted from a line plot. */
-interface ILinePlotEvents extends IPlotEvents<ILinePoint> {}
+interface ILinePlotEvents {
+  /** An event listener that is called when a point is called exactly once (does not fire on double click). */
+  singleClickPoint: (bin: ILinePoint) => void;
+  /** An event listener that is called when a point is clicked exactly twice (does not fire on single click). */
+  doubleClickPoint: (bin: ILinePoint) => void;
+  /** An event listener that is called when the empty space is clicked. */
+  clickSpace: () => void;
+}
 
 /**
  * An object that persists, renders, and handles information about a line plot in 2D.

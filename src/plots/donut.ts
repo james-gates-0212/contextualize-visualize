@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { BasePlot, IPlotEvents, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { BasePlot, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 /** The type of datum for each donut plot point. */
@@ -24,14 +24,21 @@ interface IDonutPlotData<TDatum extends IDonutBin = IDonutBin> {
 
 /** Represents the layout information for the plot. */
 interface IDonutPlotLayout extends IPlotLayout<"donut"> {
-  // Text label for the donut layout.
+  /** Text label for the donut layout. */
   label?: string;
-  // Whether to display as a percent.
+  /** Whether to display as a percent. */
   percent?: boolean;
 }
 
 /** The events that may be emitted from a donut plot. */
-interface IDonutPlotEvents extends IPlotEvents<IDonutBin> {}
+interface IDonutPlotEvents {
+  /** An event listener that is called when a bin is called exactly once (does not fire on double click). */
+  singleClickBin: (bin: IDonutBin) => void;
+  /** An event listener that is called when a bin is clicked exactly twice (does not fire on single click). */
+  doubleClickBin: (bin: IDonutBin) => void;
+  /** An event listener that is called when the empty space is clicked. */
+  clickSpace: () => void;
+}
 
 /**
  * An object that persists, renders, and handles information about a donut plot in 2D.
@@ -41,7 +48,6 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
   private arcsSel?:       Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
   private labelsSel?:     Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
   private valuesSel?:     Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
-  private hiddenArcsSel?: Selection<SVGGElement, unknown, HTMLElement>;
   private layoutLabel?:   Selection<SVGGElement, string, SVGGElement, IDonutBin[]>;
   // #endregion
 
@@ -76,7 +82,6 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
   /** Initializes the scales used to transform data for the donut plot. */
   private setupScales() {
     // Filter the data for the donut.
-    this._data.data = this._data.data.filter(d => d.value > 0);
     const total = d3.sum(this._data.data, d => d.value);
     this._values = this._data.data.map(d => {
       const percentage = d.value * 100 / total;
@@ -99,17 +104,21 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       // Create the SVG element.
       const { svg, size } = createSvg(this.container, this.layout);
 
-      this.svgSel = svg.attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height]);
-
-      // Setup the zoom behavior.
-      this.zoomSel = this.svgSel.append("g");
+      this.svgSel = svg
+        .attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height]);
 
       // Create the donut plot elements.
-      this.arcsSel = this.zoomSel.append("g").datum(this._data.data).selectAll("path");
-      this.labelsSel = this.zoomSel.append("g").datum(this._data.data).selectAll("text");
-      this.valuesSel = this.zoomSel.append("g").datum(this._data.data).selectAll("text");
-      this.hiddenArcsSel = this.zoomSel.append("g");
-      this.layoutLabel = this.zoomSel.append("g").selectAll("text");
+      this.arcsSel = this.svgSel.append("g")
+        .datum(this._data.data)
+        .selectAll("path");
+      this.labelsSel = this.svgSel.append("g")
+        .attr("font-weight", "bold")
+        .datum(this._data.data)
+        .selectAll("text");
+      this.valuesSel = this.svgSel.append("g")
+        .datum(this._data.data)
+        .selectAll("text");
+      this.layoutLabel = this.svgSel.append("g").selectAll("text");
     }
   }
 
@@ -150,10 +159,8 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     const { size } = createSvg(undefined, this._layout);
     const dim = Math.min(size.width, size.height);
     const radius = dim / 2;
-    const innerRadius = radius * 2.5 / 4;
+    const innerRadius = radius / 2;
     const outerRadius = radius / 4;
-    const middle = (d: d3.PieArcDatum<IDonutBin>) =>
-      (d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius;
     const cornerRadius = 5;
     const padAngle = 2 / radius;
 
@@ -169,61 +176,47 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .cornerRadius(cornerRadius)
       .padAngle(padAngle);
 
-    const valueArc = d3.arc<d3.PieArcDatum<IDonutBin>>()
-      .innerRadius(middle)
-      .outerRadius(middle)
-      .padAngle(padAngle);
-
-    const that = this;
-
     this.arcsSel = this.arcsSel
       ?.data(pie)
       .join("path")
       .attr("fill", (d, i, a) => d.data.style?.fillColor ?? this.scaleColor(i / a.length))
       .attr("stroke", d => d.data.style?.strokeColor ?? "currentColor")
       .attr("stroke-width", d => d.data.style?.strokeWidth ?? 0)
-      .attr("d", arc)
-      .each(function(d, i) {
-        // search pattern for everything between the start and the first capital L
-        const firstArcSection = /(^.+?)L/;
-        // grab everything up to the first Line statement
-        const origArc = (firstArcSection.exec(d3.select(this).attr("d")) ?? [])[1];
-        // replace all the commas so that IE can handle it
-        const newArc = origArc.replace(/,/g, " ");
-        // create new invisible arc that text can fit to
-        that.hiddenArcsSel
-          ?.append("path")
-          .attr("class", "hiddenArcs")
-          .attr("id", "hiddenArc" + i)
-          .attr("d", newArc)
-          .style("fill", "none");
-      });
+      .attr("d", arc);
 
-    this.labelsSel
+    const need2Flip = (d: d3.PieArcDatum<IDonutBin>) => (
+      (d.startAngle + d.endAngle) > Math.PI &&
+      (d.startAngle + d.endAngle) < Math.PI * 3
+    );
+
+    this.labelsSel = this.labelsSel
       ?.data(pie)
       .join("text")
-      .attr("dy", -5)
-      .append("textPath")
-      .attr("startOffset", "50%")
+      .attr("dy", d => need2Flip(d) ? "+2.5em" : "-2em")
       .attr("text-anchor", "middle")
-      .attr("font-size", "12")
-      .attr("xlink:href", (d, i) => "#hiddenArc" + i)
-      .text(d => d.data.label ?? "");
+      .attr("transform", d => [
+        `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
+        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius})`,
+        `rotate(${need2Flip(d) ? 180 : 0})`,
+      ].join(" ").trim())
+      .text(d => d.data.value > 0 ? (d.data.label ?? "") : "");
 
     this.valuesSel = this.valuesSel
       ?.data(pie)
       .join("text")
-      .attr("transform", d => `translate(${valueArc.centroid(d)})`)
+      .attr("dy", d => need2Flip(d) ? "+1.2em" : "-0.5em")
       .attr("text-anchor", "middle")
-      .attr("dy", ".31em")
-      .attr("font-size", "10")
-      .text((d, i) => this._values[i] ?? "");
+      .attr("transform", d => [
+        `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
+        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius})`,
+        `rotate(${need2Flip(d) ? 180 : 0})`,
+      ].join(" ").trim())
+      .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "");
 
     if (this._layout.label) {
       this.layoutLabel = this.layoutLabel
         ?.data([this._layout.label])
         .join("text")
-        .attr("dy", ".31em")
         .attr("text-anchor", "middle")
         .text(d => d);
     }

@@ -10,7 +10,7 @@ interface IDonutPlot {
   /** The data to supply the line plot. */
   data?: IDonutPlotData<IDonutBin>;
   /** The layout to use for the line plot. */
-  layout: IDonutPlotLayout;
+  layout?: IDonutPlotLayout;
 }
 
 export default {
@@ -49,6 +49,7 @@ const data:IDonutBin[] = [{
   label: "10-14",
   value: 20679786,
   style: {
+    fillColor: "#dbdbdb",
     fillRadius: 60,
   },
 }, {
@@ -84,6 +85,7 @@ export const SimpleDonut = Template.bind({});
 SimpleDonut.args = {
   data: {
     data: data,
+    colormap: "inferno",
   },
   layout: {
     label: "Population by age",
@@ -101,3 +103,98 @@ PercentageDonut.args = {
     percent: true,
   },
 };
+
+export const GenderDonut = Template.bind({});
+GenderDonut.args = {
+  data: {
+    data: [{
+      label: "Male",
+      value: 54687123,
+      style: {
+        fillColor: "blue",
+      },
+    },{
+      label: "Female",
+      value: 86471235,
+      style: {
+        fillColor: "pink",
+      },
+    },],
+  },
+  layout: {
+    label: "Population by gender",
+    percent: false,
+  },
+};
+
+let timeoutID: NodeJS.Timer;
+
+const RealtimeTemplate: Story<IDonutPlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the Donut plot.
+  const layout: IDonutPlotLayout = {
+    label: "Voting for a winner",
+  };
+
+  const countries = [
+    "Argentina",
+    "Australia",
+    "Austria",
+    "Brazil",
+    "Denmark",
+    "England",
+    "France",
+    "Germany",
+    "Italy",
+    "Mexico",
+    "Netherland",
+    "Norway",
+    "Portugal",
+    "Spain",
+  ];
+
+  const data: IDonutPlotData = {
+    data: countries.map(country => ({
+        label: country,
+        value: 0,
+      })),
+  };
+  const plot = new DonutPlot(data, layout, container);
+
+  plot.render();
+
+  let values: number[];
+  values = Array(countries.length)
+    .fill(0)
+    .map((_, k) => 1 + Math.sin(k / 5));
+  let valuesSum = values.reduce((x, y) => x + y, 0);
+  values = values.map((f) => f / valuesSum);
+
+  if (timeoutID) {
+    clearInterval(timeoutID);
+  }
+
+  timeoutID = setInterval(() => {
+    let rand = Math.random();
+    let index = 0;
+    while (rand > values[index]) {
+      index++;
+      rand -= values[index];
+    }
+    if (data.data[index]) {
+      data.data[index].value++;
+    }
+
+    plot.data = data;
+    plot.render();
+  }, 50);
+
+  return container;
+};
+
+export const RealtimeDonut = RealtimeTemplate.bind({});
+RealtimeDonut.args = {};
