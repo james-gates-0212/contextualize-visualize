@@ -9,7 +9,7 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
   // #region DOM
   protected _container?: HTMLElement;
   protected svgSel?: Selection<SVGSVGElement, unknown, HTMLElement>;
-  protected zoomSel?: Selection<SVGGElement, unknown, HTMLElement>;
+  protected contentSel?: Selection<SVGGElement, unknown, HTMLElement>;
   // #endregion
 
   // #region Extensions

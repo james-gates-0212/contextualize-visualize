@@ -37,6 +37,7 @@ const data:IDonutBin[] = [{
   label: "<5",
   value: 19912018,
   style: {
+    fillColor: "#ccc",
     fillRadius: 40,
   },
 }, {
@@ -49,7 +50,7 @@ const data:IDonutBin[] = [{
   label: "10-14",
   value: 20679786,
   style: {
-    fillColor: "#dbdbdb",
+    fillColor: "red",
     fillRadius: 60,
   },
 }, {

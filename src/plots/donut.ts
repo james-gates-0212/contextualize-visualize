@@ -107,18 +107,20 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       this.svgSel = svg
         .attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height]);
 
+      this.contentSel = this.svgSel.append("g");
+
       // Create the donut plot elements.
-      this.arcsSel = this.svgSel.append("g")
+      this.arcsSel = this.contentSel.append("g")
         .datum(this._data.data)
         .selectAll("path");
-      this.labelsSel = this.svgSel.append("g")
+      this.labelsSel = this.contentSel.append("g")
         .attr("font-weight", "bold")
         .datum(this._data.data)
         .selectAll("text");
-      this.valuesSel = this.svgSel.append("g")
+      this.valuesSel = this.contentSel.append("g")
         .datum(this._data.data)
         .selectAll("text");
-      this.layoutLabel = this.svgSel.append("g").selectAll("text");
+      this.layoutLabel = this.contentSel.append("g").selectAll("text");
     }
   }
 
@@ -192,11 +194,11 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     this.labelsSel = this.labelsSel
       ?.data(pie)
       .join("text")
-      .attr("dy", d => need2Flip(d) ? "+2.5em" : "-2em")
+      .attr("dy", "0.31em")
       .attr("text-anchor", "middle")
       .attr("transform", d => [
         `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius})`,
+        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius + 15})`,
         `rotate(${need2Flip(d) ? 180 : 0})`,
       ].join(" ").trim())
       .text(d => d.data.value > 0 ? (d.data.label ?? "") : "");
@@ -204,11 +206,11 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     this.valuesSel = this.valuesSel
       ?.data(pie)
       .join("text")
-      .attr("dy", d => need2Flip(d) ? "+1.2em" : "-0.5em")
+      .attr("dy", "0.31em")
       .attr("text-anchor", "middle")
       .attr("transform", d => [
         `rotate(${(d.startAngle + d.endAngle) / 2 * 180 / Math.PI})`,
-        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) + innerRadius})`,
+        `translate(0,-${(d.data.style?.fillRadius ?? outerRadius) / 2 + innerRadius})`,
         `rotate(${need2Flip(d) ? 180 : 0})`,
       ].join(" ").trim())
       .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "");

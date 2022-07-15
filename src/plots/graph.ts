@@ -190,7 +190,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       .zoom<SVGSVGElement, unknown>()
       .filter((event: any) => !event.button && event.type !== "dblclick")
       .on("zoom", (event) => {
-        this.zoomSel?.attr("transform", event.transform);
+        this.contentSel?.attr("transform", event.transform);
         this.tick();
       });
     this.forceExt = d3
@@ -240,7 +240,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       // Setup the zoom behavior.
       // Notice we disable the double click zoom behavior because we allow double click to be used to
       // expand/collapse nodes.
-      this.zoomSel = this.svgSel.append("g");
+      this.contentSel = this.svgSel.append("g");
       if (this.zoomExt) {
         this.svgSel
           .call(this.zoomExt)
@@ -248,18 +248,18 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       }
 
       // Setup all of the data-related elements.
-      this.linkSel = this.zoomSel.append("g").selectAll("line");
-      this.nodeSel = this.zoomSel
+      this.linkSel = this.contentSel.append("g").selectAll("line");
+      this.nodeSel = this.contentSel
         .append("g")
         .style("cursor", "pointer")
         .selectAll("circle");
-      this.selectSel = this.zoomSel
+      this.selectSel = this.contentSel
         .append("g")
         .attr("fill", "currentcolor")
         .style("pointer-events", "none")
         .selectAll("circle");
       this.locSel = this.svgSel.append("g").selectAll("use");
-      this.textSel = this.zoomSel
+      this.textSel = this.contentSel
         .append("g")
         .attr("fill", "currentcolor")
         .style("pointer-events", "none")
@@ -539,8 +539,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     // Calculate the arrows that are not within the viewport.
     if (this.locSel) {
       const { size } = createSvg(undefined, this.layout, true);
-      if (this.zoomSel) {
-        const transform = d3.zoomTransform(this.zoomSel.node()!);
+      if (this.contentSel) {
+        const transform = d3.zoomTransform(this.contentSel.node()!);
         const { x, y, k } = transform;
         const calcLocator = (v: IGraphVertex): IGraphLocator | null => {
           // Check if the vertex is within the viewport.
@@ -634,7 +634,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
   /** Zooms the plot to fit all of the data within the viewbox. */
   public zoomToFit() {
     // Get the size of the SVG element.
-    if (!this.zoomSel || !this.isNoneTreeLayout()) return;
+    if (!this.contentSel || !this.isNoneTreeLayout()) return;
     const {
       size: { width, height },
     } = createSvg(undefined, this.layout);
@@ -652,7 +652,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     const [xMin, xMax] = xExtent as [number, number];
     const [yMin, yMax] = yExtent as [number, number];
     if (this.zoomExt) {
-      this.zoomSel
+      this.contentSel
         .transition()
         .duration(500)
         .call(

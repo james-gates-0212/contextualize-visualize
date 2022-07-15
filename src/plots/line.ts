@@ -130,8 +130,9 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
+      this.contentSel = this.svgSel.append("g");
+
       // Setup the zoom behavior.
-      this.zoomSel = this.svgSel.append("g");
       if (this.zoomExt) {
         this.svgSel
           .call(this.zoomExt)
@@ -139,8 +140,8 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       }
 
       // Create the line plot elements.
-      this.linesSel = this.zoomSel.append("g").selectAll("line");
-      this.pointsSel = this.zoomSel.append("g").selectAll("circle");
+      this.linesSel = this.contentSel.append("g").selectAll("line");
+      this.pointsSel = this.contentSel.append("g").selectAll("circle");
 
       this.setupAxisElements();
     }
@@ -150,7 +151,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
   /** Zooms the plot to fit all of the data within the viewbox. */
   public zoomToFit() {
     // Get the size of the SVG element.
-    if (!this.zoomSel) return;
+    if (!this.contentSel) return;
     const {
       size: { width, height },
     } = createSvg(undefined, this.layout);
@@ -168,7 +169,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
     const [xMin, xMax] = xExtent as [number, number];
     const [yMin, yMax] = yExtent as [number, number];
     if (this.zoomExt) {
-      this.zoomSel
+      this.contentSel
         .transition()
         .duration(500)
         .call(

@@ -129,11 +129,10 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
       this.svgSel = svg;
 
-      // Setup the zoom behavior.
-      this.zoomSel = this.svgSel.append("g");
+      this.contentSel = this.svgSel.append("g");
 
       // Create the histogram plot elements.
-      this.rectsSel = this.zoomSel.append("g").selectAll("rect");
+      this.rectsSel = this.contentSel.append("g").selectAll("rect");
 
       this.setupAxisElements();
     }

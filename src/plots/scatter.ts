@@ -136,8 +136,9 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
+      this.contentSel = this.svgSel.append("g");
+
       // Setup the zoom behavior.
-      this.zoomSel = this.svgSel.append("g");
       if (this.zoomExt) {
         this.svgSel
           .call(this.zoomExt)
@@ -145,7 +146,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
       }
 
       // Create the scatter plot elements.
-      this.pointsSel = this.zoomSel.append("g").selectAll("circle");
+      this.pointsSel = this.contentSel.append("g").selectAll("circle");
 
       this.setupAxisElements();
     }
@@ -155,7 +156,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
   /** Zooms the plot to fit all of the data within the viewbox. */
   public zoomToFit() {
     // Get the size of the SVG element.
-    if (!this.zoomSel) return;
+    if (!this.contentSel) return;
     const {
       size: { width, height },
     } = createSvg(undefined, this.layout);
@@ -173,7 +174,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
     const [xMin, xMax] = xExtent as [number, number];
     const [yMin, yMax] = yExtent as [number, number];
     if (this.zoomExt) {
-      this.zoomSel
+      this.contentSel
         .transition()
         .duration(500)
         .call(

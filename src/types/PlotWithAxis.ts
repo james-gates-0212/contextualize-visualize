@@ -40,7 +40,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
         this.yAxis(this.yAxisSel, scaleYZoom);
         this.xAxisGrid(this.xAxisSel, scaleXZoom);
         this.yAxisGrid(this.yAxisSel, scaleYZoom);
-        this.zoomSel?.attr("transform", transform.toString());
+        this.contentSel?.attr("transform", transform.toString());
       });
   }
 
@@ -116,8 +116,8 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
 
   /** Reset the axes. */
   protected resetAxis() {
-    if (this.zoomSel) {
-      const transform = d3.zoomTransform(this.zoomSel.node()!);
+    if (this.contentSel) {
+      const transform = d3.zoomTransform(this.contentSel.node()!);
       const scaleXZoom = transform.rescaleX(this.scaleX);
       const scaleYZoom = transform.rescaleY(this.scaleY);
       this.xAxis(this.xAxisSel, scaleXZoom);
