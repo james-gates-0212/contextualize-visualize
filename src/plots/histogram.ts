@@ -12,6 +12,9 @@ interface IHistogramBin {
   /** The maximum value of the bin. */
   max: number;
 
+  /** Whether the bin is selected. */
+  selected?: boolean;
+
   /** The optional styles to apply to the bin. */
   style?: IPlotStyle;
 }
@@ -28,6 +31,8 @@ interface IHistogramPlotData<TDatum extends IHistogramBin = IHistogramBin> {
 interface IHistogramPlotLayout extends IPlotLayout<"histogram"> {
   /** Display method for horizontal or vertical. */
   orientation: "horizontal" | "vertical";
+  /** Determine to normalize the data between 0 and 1. */
+  normalize?: boolean;
 }
 
 /** The events that may be emitted from a histogram plot. */
@@ -46,6 +51,7 @@ interface IHistogramPlotEvents {
 class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayout, IHistogramPlotEvents> {
   // #region DOM
   private rectsSel?: Selection<SVGGElement, IHistogramBin, SVGGElement>;
+  private freqsSel?: Selection<SVGGElement, IHistogramBin, SVGGElement>;
   // #endregion
 
   /**
@@ -70,6 +76,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
     // Perform setup tasks.
     this.setupElements();
+    this.setupEvents();
     this.setupScales();
   }
 
@@ -107,7 +114,8 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .nice()
       .range(this.isHorizontal() ? scaleRangeX : scaleRangeY);
 
-    const extentFreq = d3.extent(this.data.data, data => data.frequency);
+    const total = d3.sum(this.data.data, data => data.frequency);
+    const extentFreq = d3.extent(this.data.data, data => data.frequency / (this.layout.normalize ? total : 1));
 
     const scaleFreq = d3
       .scaleLinear()
@@ -128,15 +136,34 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       // Create the SVG element.
       const { svg } = createSvg(this.container, this.layout);
 
-      this.svgSel = svg;
+      this.svgSel = svg.on("click", (e: PointerEvent) => {
+        this.notify("clickSpace");
+      });
+
+      this.setupAxisElements();
 
       this.contentSel = this.svgSel.append("g");
 
       // Create the histogram plot elements.
-      this.rectsSel = this.contentSel.append("g").selectAll("rect");
-
-      this.setupAxisElements();
+      this.rectsSel = this.contentSel.append("g")
+        .style("cursor", "pointer")
+        .selectAll("rect");
+      this.freqsSel = this.contentSel.append("g")
+        .selectAll("text");
     }
+  }
+
+  /** Bind the events for the elements. */
+  private setupEvents() {
+    this
+      .on("singleClickBin", (bin) => {
+        bin.selected = !bin.selected;
+        this.render();
+      })
+      .on("clickSpace", () => {
+        this._data.data.forEach(bin => bin.selected = false);
+        this.render();
+      });
   }
 
   // #region Plot Getters/Setters
@@ -173,25 +200,75 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
   public render() {
     const scaleValues = this.scaleX;
     const scaleFreq = this.scaleY;
+
+    const total = this.layout.normalize ? d3.sum(this.data.data, data => data.frequency) : 1;
+
+    const frequency = (d: IHistogramBin) => d.frequency / total;
+
+    const strokeWidth = (d: IHistogramBin) => d.style?.strokeWidth ?? 0;
+
+    const x = (d: IHistogramBin) =>
+      (
+        this.isHorizontal()
+          ? (scaleValues(d.min) + 1)
+          : scaleValues(0)
+      ) + strokeWidth(d) / 2;
+
+    const y = (d: IHistogramBin) =>
+      (
+        this.isHorizontal()
+          ? scaleFreq(frequency(d))
+          : (scaleFreq(d.max) + 1)
+      ) + strokeWidth(d) / 2;
+
+    const width = (d: IHistogramBin) =>
+      this.isHorizontal()
+        ? Math.max(1, scaleValues(d.max) - scaleValues(d.min) - strokeWidth(d) - 1)
+        : scaleValues(frequency(d)) - scaleValues(0) - strokeWidth(d);
+
+    const height = (d: IHistogramBin) =>
+      this.isHorizontal()
+        ? scaleFreq(0) - scaleFreq(frequency(d)) - strokeWidth(d)
+        : Math.max(1, scaleFreq(d.min) - scaleFreq(d.max) - strokeWidth(d) - 1);
+
+    const offset = "1em";
+
+    const topX = (d: IHistogramBin) => x(d) + width(d) / (this.isHorizontal() ? 2 : 1);
+    const topY = (d: IHistogramBin) => y(d) + (this.isHorizontal() ? 0 : (height(d) / 2));
+
+    const onClickBin = (e: PointerEvent, bin: IHistogramBin) => {
+      switch (e.detail) {
+        case 1: {
+          e.stopPropagation();
+          this.notify("singleClickBin", bin);
+          break;
+        }
+      }
+    };
+
     // Update the bins.
     this.rectsSel = this.rectsSel?.data(this._data.data)
       .join("rect")
       .attr("fill", d => d.style?.fillColor ?? "#53b853")
       .attr("stroke", d => d.style?.strokeColor ?? "none")
       .style("paint-order", "fill")
-      .attr("stroke-width", d => d.style?.strokeWidth ?? 0);
+      .attr("stroke-width", d => d.style?.strokeWidth ?? 0)
+      .attr("x", x)
+      .attr("y", y)
+      .attr("width", width)
+      .attr("height", height)
+      .on("click", onClickBin);
 
-    if (this.isHorizontal()) {
-      this.rectsSel?.attr("x", d => scaleValues(d.min) + (d.style?.strokeWidth ?? 0) / 2 + 1)
-        .attr("y", d => scaleFreq(d.frequency) + (d.style?.strokeWidth ?? 0) / 2)
-        .attr("width", d => Math.max(1, scaleValues(d.max) - scaleValues(d.min) - (d.style?.strokeWidth ?? 0) - 1))
-        .attr("height", d => scaleFreq(0) - scaleFreq(d.frequency) - (d.style?.strokeWidth ?? 0));
-    } else {
-      this.rectsSel?.attr("x", d => scaleValues(0) + (d.style?.strokeWidth ?? 0) / 2)
-        .attr("y", d => scaleFreq(d.max) + (d.style?.strokeWidth ?? 0) / 2 + 1)
-        .attr("width", d => scaleValues(d.frequency) - scaleValues(0) - (d.style?.strokeWidth ?? 0))
-        .attr("height", d => Math.max(1, scaleFreq(d.min) - scaleFreq(d.max) - (d.style?.strokeWidth ?? 0) - 1));
-    }
+    this.freqsSel = this.freqsSel?.data(this._data.data)
+      .join("text")
+      .attr("alignment-baseline", "middle")
+      .attr("text-anchor", this.isHorizontal() ? "middle" : "start")
+      .attr("dx", this.isHorizontal() ? null : offset)
+      .attr("dy", this.isHorizontal() ? "-" + offset : null)
+      .attr("x", topX)
+      .attr("y", topY)
+      .text(d => d.selected ? d3.format(",")(d.frequency / (this.layout.normalize ? total : 1)) : "")
+      .on("click", onClickBin);
   }
 }
 

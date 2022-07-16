@@ -90,7 +90,7 @@ data = [{
   style: {
     fillColor: "#ff0000",
     strokeColor: "#770000",
-    strokeWidth: 1,
+    strokeWidth: 4,
   },
 }, {
   min: 5,
@@ -99,7 +99,7 @@ data = [{
   style: {
     fillColor: "#ffff00",
     strokeColor: "#777700",
-    strokeWidth: 2,
+    strokeWidth: 4,
   },
 }, {
   min: 10,
@@ -108,7 +108,7 @@ data = [{
   style: {
     fillColor: "#00ff00",
     strokeColor: "#007700",
-    strokeWidth: 3,
+    strokeWidth: 4,
   },
 }, {
   min: 15,
@@ -126,7 +126,7 @@ data = [{
   style: {
     fillColor: "#0000ff",
     strokeColor: "#000077",
-    strokeWidth: 5,
+    strokeWidth: 4,
   },
 }, {
   min: 25,
@@ -135,7 +135,7 @@ data = [{
   style: {
     fillColor: "#ff00ff",
     strokeColor: "#770077",
-    strokeWidth: 6,
+    strokeWidth: 4,
   },
 }, {
   min: 30,
@@ -144,7 +144,7 @@ data = [{
   style: {
     fillColor: "#ff0000",
     strokeColor: "#770000",
-    strokeWidth: 7,
+    strokeWidth: 4,
   },
 }, {
   min: 35,
@@ -153,7 +153,7 @@ data = [{
   style: {
     fillColor: "#ffff00",
     strokeColor: "#777700",
-    strokeWidth: 8,
+    strokeWidth: 4,
   },
 }, {
   min: 40,
@@ -162,7 +162,7 @@ data = [{
   style: {
     fillColor: "#00ff00",
     strokeColor: "#007700",
-    strokeWidth: 9,
+    strokeWidth: 4,
   },
 }, {
   min: 45,
@@ -171,7 +171,7 @@ data = [{
   style: {
     fillColor: "#00ffff",
     strokeColor: "#007777",
-    strokeWidth: 10,
+    strokeWidth: 4,
   },
 }, {
   min: 50,
@@ -180,7 +180,7 @@ data = [{
   style: {
     fillColor: "#0000ff",
     strokeColor: "#000077",
-    strokeWidth: 11,
+    strokeWidth: 4,
   },
 }, {
   min: 55,
@@ -189,7 +189,7 @@ data = [{
   style: {
     fillColor: "#ff00ff",
     strokeColor: "#770077",
-    strokeWidth: 12,
+    strokeWidth: 4,
   },
 },];
 
@@ -202,9 +202,10 @@ CustomHorizontalHistogram.args = {
     orientation: "horizontal",
     axes: {
       x: {
-        label: "Population by age",
+        label: "Age (in years)",
       },
       y: {
+        label: "Number of People",
         showLines: true,
       },
     },
@@ -220,9 +221,10 @@ CustomVerticalHistogram.args = {
     orientation: "vertical",
     axes: {
       y: {
-        label: "Population by age",
+        label: "Age (in years)",
       },
       x: {
+        label: "Number of People",
         showLines: true,
       },
     },
@@ -281,6 +283,53 @@ RandomVerticalHistogram.args = {
       },
     },
   },
+};
+
+data = [];
+const colors: {
+  rgb: string;
+  freq: Function;
+}[] = [
+  {
+    rgb: "255, 0, 0",
+    freq: (v: number) => Math.sin(v * Math.PI / 200),
+  },
+  {
+    rgb: "0, 0, 255",
+    freq: (v: number) => Math.cos(v * Math.PI / 200),
+  },
+];
+for (let i = 0; i < 100; i++) {
+  colors.forEach((color) => {
+    data.push({
+      min: i,
+      max: i + 1,
+      frequency: color.freq(i),
+      style: {
+        fillColor: `rgba(${color.rgb}, 0.5)`,
+      },
+    });
+  });
+}
+
+export const ColorHistogram = Template.bind({});
+ColorHistogram.args = {
+  data: {
+    data: data,
+  },
+  layout: {
+    orientation: "horizontal",
+    normalize: true,
+    axes: {
+      x: {
+        label: "Saturation",
+      },
+      y: {
+        label: "Red, Blue Density",
+        showLines: true,
+      },
+    }
+  }
 };
 
 let timeoutID: NodeJS.Timer;
