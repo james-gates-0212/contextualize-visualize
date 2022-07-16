@@ -267,7 +267,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .attr("dy", this.isHorizontal() ? "-" + offset : null)
       .attr("x", topX)
       .attr("y", topY)
-      .text(d => d.selected ? d3.format(",")(d.frequency / (this.layout.normalize ? total : 1)) : "")
+      .text(d => d.selected ? d3.format(",")(d.frequency / total) : "")
       .on("click", onClickBin);
   }
 }
