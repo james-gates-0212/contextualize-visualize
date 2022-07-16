@@ -28,58 +28,22 @@ const Template: Story<ILinePlot> = (args) => {
   return container;
 };
 
+let data: ILinePoint[] = [];
+
 export const SimpleLine = Template.bind({});
+for (let i = -100; i <= 100; i += 2) {
+  data.push({
+    id: i.toString(),
+    x: i / 100,
+    y: (i / 100) ** 2,
+    style: {
+      fillRadius: i === 0 ? 2 : 1,
+    },
+  });
+}
 SimpleLine.args = {
   data: {
-    data: [
-      {
-        id: "0",
-        x: -3,
-        y: 9,
-        style: {
-          fillColor: "red",
-          fillRadius: 15,
-          strokeColor: "yellow",
-          strokeWidth: 3,
-        },
-      },
-      { id: "1", x: -2, y: 4 },
-      {
-        id: "2",
-        x: -1,
-        y: 1,
-        style: {
-          fillColor: "blue",
-          fillRadius: 12,
-          strokeColor: "brown",
-          strokeWidth: 7,
-        },
-      },
-      { id: "3", x: 0, y: 0 },
-      {
-        id: "4",
-        x: +1,
-        y: 1,
-        style: {
-          fillColor: "black",
-          fillRadius: 8,
-          strokeColor: "purple",
-          strokeWidth: 3,
-        },
-      },
-      { id: "5", x: +2, y: 4 },
-      {
-        id: "6",
-        x: +3,
-        y: 9,
-        style: {
-          fillColor: "yellow",
-          fillRadius: 10,
-          strokeColor: "cyan",
-          strokeWidth: 4,
-        },
-      },
-    ],
+    data
   },
   layout: {
     axes: {
@@ -93,61 +57,84 @@ SimpleLine.args = {
   },
 };
 
-export const RandomLine = Template.bind({});
-let data: ILinePoint[] = [];
-for (let k = 0; k < 500; k++) {
+export const DifferentColorLine = Template.bind({});
+data = [];
+for (let k = 0; k < Math.PI * 8; k += 0.1) {
   data.push({
     id: `${k}`,
-    x: Math.random(),
-    y: Math.random(),
+    x: k,
+    y: Math.sin(k) + 0.1 * Math.random(),
+    value: Math.random(),
+    style: {
+      fillRadius: 1,
+    },
   });
 }
-RandomLine.args = {
+DifferentColorLine.args = {
   data: {
     data,
+    colormap: "rainbow",
   },
   layout: {
     axes: {
       x: {
-        label: "Random Line-X",
-        showLines: true,
-      },
-      y: {
-        label: "Random Line-Y",
-        showLines: true,
+        label: "Different Color Line",
       },
     },
   },
 };
 
-export const ColormapLine = Template.bind({});
+export const DashLine = Template.bind({});
 data = [];
-for (let k = 0; k < 100; k++) {
+for (let k = 0, show = true; k < Math.PI * 4; k += 0.05, show = !show) {
   data.push({
     id: `${k}`,
-    x: Math.random(),
-    y: Math.random(),
-    value: Math.random(),
-    weight: Math.random(),
+    x: k,
+    y: Math.sin(k / 2),
     style: {
-      fillRadius: Math.round(10 * Math.random()),
-      strokeWidth: Math.round(5 * Math.random()),
+      strokeColor: show ? "black" : "white",
     },
   });
 }
-ColormapLine.args = {
+DashLine.args = {
   data: {
     data,
-    colormap: "inferno",
+    colormap: "rainbow",
   },
   layout: {
     axes: {
       x: {
-        label: "Colormap Line-X",
-        showLines: true,
+        label: "Different Color Line",
       },
-      y: {
-        label: "Colormap Line-Y",
+    },
+  },
+};
+
+export const SpirographLine = Template.bind({});
+data = [];
+for (let t = 0; t <= 1; t += 0.001) {
+  data.push({
+    id: `${t}`,
+    x: 8 * Math.cos(2 * Math.PI * t) + 4 * Math.cos(16 * Math.PI * t),
+    y: 8 * Math.sin(2 * Math.PI * t) - 4 * Math.sin(16 * Math.PI * t),
+    value: t,
+  });
+}
+data.push({
+  id: `00`,
+  x: 8 * Math.cos(2 * Math.PI * 0) + 4 * Math.cos(16 * Math.PI * 0),
+  y: 8 * Math.sin(2 * Math.PI * 0) - 4 * Math.sin(16 * Math.PI * 0),
+  value: 0,
+});
+SpirographLine.args = {
+  data: {
+    data,
+    colormap: "rainbow",
+  },
+  layout: {
+    axes: {
+      x: {
+        label: "Spirograph",
       },
     },
   },
