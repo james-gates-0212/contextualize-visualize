@@ -186,7 +186,7 @@ TwoHubsOfNodes.args = {
   treeLayout: "none",
 };
 
-let timeoutID: NodeJS.Timer;
+let interval: NodeJS.Timer | undefined = undefined;
 
 const RealtimeTemplate: Story<IGraphPlot> = (args) => {
   // Construct the container.
@@ -214,11 +214,12 @@ const RealtimeTemplate: Story<IGraphPlot> = (args) => {
   }
   plot.render();
 
-  if (timeoutID) {
-    clearInterval(timeoutID);
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
   }
 
-  timeoutID = setInterval(() => {
+  interval = setInterval(() => {
     const length = data.vertices.length;
     const index = Math.floor(length * Math.random());
     data.vertices.push({ id: length.toString(), label: length.toString() });

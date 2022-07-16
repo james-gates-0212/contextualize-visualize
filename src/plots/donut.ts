@@ -133,7 +133,17 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
         .style("cursor", "pointer")
         .datum(this._data.data)
         .selectAll("text");
-      this.layoutLabel = this.contentSel.append("g").selectAll("text");
+      this.layoutLabel = this.contentSel.append("g")
+        .selectAll("text");
+
+      if (this._layout.label) {
+        this.layoutLabel = this.layoutLabel
+          ?.data([this._layout.label])
+          .join("text")
+          .attr("alignment-baseline", "middle")
+          .attr("text-anchor", "middle")
+          .text(d => d);
+      }
     }
   }
 
@@ -275,15 +285,6 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .text((d, i) => d.data.value > 0 ? (this._values[i] ?? "") : "")
       .attr("font-weight", d => d.data.selected ? "bold" : null)
       .on("click", singleClickBin);
-
-    if (this._layout.label) {
-      this.layoutLabel = this.layoutLabel
-        ?.data([this._layout.label])
-        .join("text")
-        .attr("alignment-baseline", "middle")
-        .attr("text-anchor", "middle")
-        .text(d => d);
-    }
   }
 }
 

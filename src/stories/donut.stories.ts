@@ -186,7 +186,7 @@ GenderDonut.args = {
   },
 };
 
-let timeoutID: NodeJS.Timer;
+let interval: NodeJS.Timer | undefined = undefined;
 
 const RealtimeTemplate: Story<IDonutPlot> = (args) => {
   // Construct the container.
@@ -195,10 +195,7 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the Donut plot.
-  const layout: IDonutPlotLayout = {
-    label: "Voting for a winner",
-    radialLabels: true,
-  };
+  const { layout } = args;
 
   const countries = [
     "Argentina",
@@ -234,11 +231,12 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
   let valuesSum = values.reduce((x, y) => x + y, 0);
   values = values.map((f) => f / valuesSum);
 
-  if (timeoutID) {
-    clearInterval(timeoutID);
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
   }
 
-  timeoutID = setInterval(() => {
+  interval = setInterval(() => {
     let rand = Math.random();
     let index = 0;
     while (rand > values[index]) {
@@ -257,4 +255,9 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
 };
 
 export const RealtimeDonut = RealtimeTemplate.bind({});
-RealtimeDonut.args = {};
+RealtimeDonut.args = {
+  layout: {
+    label: "Voting for a winner",
+    radialLabels: true,
+  },
+};

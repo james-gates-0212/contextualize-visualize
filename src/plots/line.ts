@@ -57,11 +57,6 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
   private _lines: TLineSegment[];
   // #endregion
 
-  private connectLine = d3.line()
-    .defined(d => !isNaN(d[1]))
-    .x(d => this.scaleX(d[0]))
-    .y(d => this.scaleY(d[1]));
-
   /**
    * Constructs a new line plot.
    * @param data Data to be plotted. Optional.
@@ -130,6 +125,8 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
+      this.setupAxisElements();
+
       this.contentSel = this.svgSel.append("g");
 
       // Setup the zoom behavior.
@@ -142,8 +139,6 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       // Create the line plot elements.
       this.linesSel = this.contentSel.append("g").selectAll("line");
       this.pointsSel = this.contentSel.append("g").selectAll("circle");
-
-      this.setupAxisElements();
     }
   }
 
@@ -248,13 +243,18 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       )
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 0);
 
+    const connectLine = d3.line<[number, number]>()
+      .defined(d => !isNaN(d[1]))
+      .x(d => this.scaleX(d[0]))
+      .y(d => this.scaleY(d[1]));
+
     this.linesSel = this.linesSel
       ?.data(this._lines)
       .join("path")
-      .attr("d", d => this.connectLine(d.map(e => [e.x ?? 0, e.y ?? 0])))
+      .attr("d", d => connectLine(d.map(e => [e.x ?? 0, e.y ?? 0])))
       .attr("stroke", d =>
-        d[0].weight !== undefined
-          ? this.scaleColor(d[0].weight)
+        d[0].value !== undefined
+          ? this.scaleColor(d[0].value)
           : d[0].style?.strokeColor ?? "#53b853")
       .attr("stroke-width", d => d[0].style?.strokeWidth ?? 1);
   }

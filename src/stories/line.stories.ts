@@ -1,10 +1,5 @@
 import { Story, Meta } from "@storybook/html";
-import {
-  LinePlot,
-  ILinePoint,
-  ILinePlotData,
-  ILinePlotLayout,
-} from "plots";
+import { LinePlot, ILinePoint, ILinePlotData, ILinePlotLayout } from "plots";
 
 interface ILinePlot {
   /** The data to supply the line plot. */
@@ -37,13 +32,53 @@ export const SimpleLine = Template.bind({});
 SimpleLine.args = {
   data: {
     data: [
-      { id: "0", x: -3, y: 9, style: { fillColor: "red", fillRadius: 15, strokeColor: "yellow", strokeWidth: 3, }, },
-      { id: "1", x: -2, y: 4, },
-      { id: "2", x: -1, y: 1, style: { fillColor: "blue", fillRadius: 12, strokeColor: "brown", strokeWidth: 7, }, },
-      { id: "3", x:  0, y: 0, },
-      { id: "4", x: +1, y: 1, style: { fillColor: "black", fillRadius: 8, strokeColor: "purple", strokeWidth: 3, }, },
-      { id: "5", x: +2, y: 4, },
-      { id: "6", x: +3, y: 9, style: { fillColor: "yellow", fillRadius: 10, strokeColor: "cyan", strokeWidth: 4, }, },
+      {
+        id: "0",
+        x: -3,
+        y: 9,
+        style: {
+          fillColor: "red",
+          fillRadius: 15,
+          strokeColor: "yellow",
+          strokeWidth: 3,
+        },
+      },
+      { id: "1", x: -2, y: 4 },
+      {
+        id: "2",
+        x: -1,
+        y: 1,
+        style: {
+          fillColor: "blue",
+          fillRadius: 12,
+          strokeColor: "brown",
+          strokeWidth: 7,
+        },
+      },
+      { id: "3", x: 0, y: 0 },
+      {
+        id: "4",
+        x: +1,
+        y: 1,
+        style: {
+          fillColor: "black",
+          fillRadius: 8,
+          strokeColor: "purple",
+          strokeWidth: 3,
+        },
+      },
+      { id: "5", x: +2, y: 4 },
+      {
+        id: "6",
+        x: +3,
+        y: 9,
+        style: {
+          fillColor: "yellow",
+          fillRadius: 10,
+          strokeColor: "cyan",
+          strokeWidth: 4,
+        },
+      },
     ],
   },
   layout: {
@@ -53,8 +88,8 @@ SimpleLine.args = {
       },
       y: {
         label: "Simple Line-Y",
-      }
-    }
+      },
+    },
   },
 };
 
@@ -75,13 +110,13 @@ RandomLine.args = {
     axes: {
       x: {
         label: "Random Line-X",
-        showLines: true
+        showLines: true,
       },
       y: {
         label: "Random Line-Y",
-        showLines: true
-      }
-    }
+        showLines: true,
+      },
+    },
   },
 };
 
@@ -109,11 +144,58 @@ ColormapLine.args = {
     axes: {
       x: {
         label: "Colormap Line-X",
-        showLines: true
+        showLines: true,
       },
       y: {
-        label: "Colormap Line-Y"
-      }
+        label: "Colormap Line-Y",
+      },
+    },
+  },
+};
+
+let interval: NodeJS.Timer | undefined = undefined;
+const MarketTemplate: Story<ILinePlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the line plot.
+  const data: ILinePlotData<ILinePoint> = {
+    data: [{ id: "0", x: 0, y: 0, value: 0 }],
+    colormap: "RdYlGn",
+  };
+  const { layout } = args;
+  const plot = new LinePlot(data, layout, container);
+
+  plot.render();
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
+  }
+  interval = setInterval(() => {
+    const length = data.data.length;
+    const datum = data.data[length - 1];
+    const u1 = Math.random();
+    const u2 = Math.random();
+    const n = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    const x = datum.x! + 1;
+    const y = datum.y! + n;
+    data.data.push({ id: `${length}`, x, y, value: y });
+
+    plot.data = data;
+    plot.render();
+  }, 50);
+
+  return container;
+};
+
+export const StockMarketLine = MarketTemplate.bind({});
+StockMarketLine.args = {
+  layout: {
+    axes: {
+      x: { label: "Time (in days)" },
+      y: { label: "Relative Market Value ($/share)", showLines: true },
     },
   },
 };

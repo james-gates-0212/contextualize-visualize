@@ -332,7 +332,7 @@ ColorHistogram.args = {
   }
 };
 
-let timeoutID: NodeJS.Timer;
+let interval: NodeJS.Timer | undefined = undefined;
 
 const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
   // Construct the container.
@@ -370,11 +370,12 @@ const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
   let frequencySum = frequencies.reduce((x, y) => x + y, 0);
   frequencies = frequencies.map((f) => f / frequencySum);
 
-  if (timeoutID) {
-    clearInterval(timeoutID);
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
   }
 
-  timeoutID = setInterval(() => {
+  interval = setInterval(() => {
     let rand = Math.random();
     let index = 0;
     while (rand > frequencies[index]) {
