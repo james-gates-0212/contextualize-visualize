@@ -210,7 +210,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
   private setupElements() {
     if (this.container) {
       // Create the SVG element.
-      const { svg } = createSvg(this.container, this.layout, true);
+      const { svg } = createSvg(this.container, this.layout, this.isRadialTreeLayout() || this.isNoneTreeLayout());
       this.svgSel = svg;
       this.svgSel.on("click", (event) => {
         if (event.target === event.currentTarget) this.notify("clickSpace");
@@ -248,7 +248,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       }
 
       // Setup all of the data-related elements.
-      this.linkSel = this.contentSel.append("g").selectAll("line");
+      this.linkSel = this.contentSel.append("g")
+        .selectAll("line");
       this.nodeSel = this.contentSel
         .append("g")
         .style("cursor", "pointer")
@@ -268,6 +269,14 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
   }
 
   private setupSimulation() {
+    if (this.svgSel) {
+      const { size } = createSvg(undefined, this.layout);
+      this.svgSel.attr("viewBox",
+        this.isNoneTreeLayout() || this.isRadialTreeLayout()
+          ? [-size.width/2, -size.height/2, size.width, size.height]
+          : [0, 0, size.width, size.height]
+      );
+    }
     if (this.isNoneTreeLayout()) {
       // Set the data within the force simulation.
       this.forceExt.nodes(this._data.vertices);
@@ -298,9 +307,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     const root = d3.hierarchy(data).sort((a, b) => d3.ascending(a.data.label, b.data.label)) as ITreeVertex;
     const descendants = root.descendants().length;
     const leaves = root.leaves().length;
-    const multiple = descendants <= leaves ** 2 ? leaves : descendants;
-    const minSize = this._defaultRadius ** 2 * multiple / (this.isRadialTreeLayout() ? 2 * Math.PI : 1);
-    const radius =  minSize;
+    const multiple = (this.isRadialTreeLayout() ? descendants * Math.PI : 0) + leaves;
+    const radius =  Math.PI * (this._defaultRadius ** (this.isRadialTreeLayout() ? 1 : 2)) * Math.sqrt(multiple);
     const treeWidth = radius * 2 / Math.sqrt(this._defaultRadius);
     const treeHeight = radius * 2 / this._defaultRadius;
     const maxSize = this.isRadialTreeLayout() ? radius * 2 : Math.max(treeWidth, treeHeight);
@@ -370,7 +378,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     const padding = 200;
 
     let contentWidth = padding;
-    let contentHeight = this.isRadialTreeLayout() ? 0 : padding;
+    let contentHeight = 0;
     let maxContentSize = 1;
     let prevMaxSize = 0;
 
@@ -490,6 +498,9 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     // Update the link source and target positions.
     if (this.linkSel) {
       this.linkSel
+        .transition()
+        .ease(d3.easeLinear)
+        .duration(this.isNoneTreeLayout() ? 0 : 500)
         .attr("x1", ({ source }) => (source as IGraphVertex).x || 0)
         .attr("y1", ({ source }) => (source as IGraphVertex).y || 0)
         .attr("x2", ({ target }) => (target as IGraphVertex).x || 0)
@@ -500,7 +511,12 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
   private updateNodeSel() {
     // Update the node positions.
     if (this.nodeSel) {
-      this.nodeSel.attr("cx", ({ x }) => x || 0).attr("cy", ({ y }) => y || 0);
+      this.nodeSel
+        .transition()
+        .ease(d3.easeLinear)
+        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .attr("cx", ({ x }) => x || 0)
+        .attr("cy", ({ y }) => y || 0);
     }
   }
 
@@ -509,6 +525,9 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     if (this.textSel) {
       const calcOffset = (r: number) => 5 + 2 * r;
       this.textSel
+        .transition()
+        .ease(d3.easeLinear)
+        .duration(this.isNoneTreeLayout() ? 0 : 500)
         .attr("x", (d) => d.x || 0)
         .attr("y", (d) => (d.y || 0) + calcOffset((d as IGraphVertex).style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius));
     }
@@ -795,7 +814,10 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     const links = this.isNoneTreeLayout() ? this._data.edges : this._links;
 
     this.linkSel = this.linkSel
-      ?.data(links as IGraphEdge[], ({ source, target }) => source + "-" + target)
+      ?.data(links as IGraphEdge[], ({ source, target }) => [
+        (source as ITreeVertex).data?.id ?? source,
+        (target as ITreeVertex).data?.id ?? target,
+      ].join("-"))
       .join("line")
 
       // Styling is applied based on defaults and the styling passed olong with the data.
@@ -809,7 +831,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
 
     // Update the nodes.
     this.nodeSel = this.nodeSel
-      ?.data(nodes, (d) => d.id)
+      ?.data(nodes, (d) => d.id ?? (d as ITreeVertex).data.id)
       .join("circle")
 
       // Styling is applied based on defaults and the styling passed along with the data.
@@ -822,14 +844,14 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     // Update the selection.
     const selectedVertices = this._data.vertices.filter((d) => d.selected);
     this.selectSel = this.selectSel
-      ?.data(selectedVertices, (d) => d.id)
+      ?.data(selectedVertices, (d) => d.id ?? (d as ITreeVertex).data.id)
       .join("circle")
       .attr("r", (d) => (d.style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius) / 3)
       .attr("fill", "currentcolor");
 
     // Update the text.
     this.textSel = this.textSel
-      ?.data(nodes, (d) => d.id)
+      ?.data(nodes, (d) => d.id ?? (d as ITreeVertex).data.id)
       .join("text")
       .text(d => d.label ?? (d as ITreeVertex).data?.label ?? "")
       .attr("text-anchor", "middle");
@@ -850,7 +872,10 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       this.tick();
     } else {
       this.linkSel
-        ?.attr("fill", "none")
+        ?.transition()
+        .ease(d3.easeLinear)
+        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .attr("fill", "none")
         .attr("transform", d => `translate(0, ${(d as ITreeEdge).offset?.y || 0})`)
         .attr("x1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[0])
         .attr("y1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[1])
@@ -860,15 +885,23 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       // Update for tree layout.
       if (this.isRadialTreeLayout()) {
 
-        this.nodeSel?.attr("transform", d => [
-          `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
-          `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
-          `translate(${d.y}, 0)`
-        ].join(' '));
+        this.nodeSel
+          ?.transition()
+          .ease(d3.easeLinear)
+          .duration(this.isNoneTreeLayout() ? 0 : 500)
+          .attr("transform", d => [
+            `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
+            `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
+            `translate(${d.y}, 0)`
+          ].join(' '));
 
         const calcOffset = (r: number) => 5 + 2 * r;
 
-        this.textSel?.attr("x", 0).attr("y", 0)
+        this.textSel
+          ?.transition()
+          .ease(d3.easeLinear)
+          .duration(this.isNoneTreeLayout() ? 0 : 500)
+          .attr("x", 0).attr("y", 0)
           .attr("transform", (d) => [
             `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
             `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
