@@ -92,8 +92,8 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
       const axisLabelColor = this._layout.style?.color ?? "";
 
       // Create the axes.
-      this.xAxisSel = this.svgSel.append("g");
-      this.yAxisSel = this.svgSel.append("g");
+      this.xAxisSel = this.svgSel.append("g").lower();
+      this.yAxisSel = this.svgSel.append("g").lower();
 
       // Add x axis label
       this.svgSel.append("text")

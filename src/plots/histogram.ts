@@ -147,8 +147,6 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
         this.notify("clickSpace");
       });
 
-      this.setupAxisElements();
-
       this.contentSel = this.svgSel.append("g");
 
       // Create the histogram plot elements.
@@ -157,6 +155,8 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
         .selectAll("rect");
       this.freqsSel = this.contentSel.append("g")
         .selectAll("text");
+
+      this.setupAxisElements();
     }
   }
 

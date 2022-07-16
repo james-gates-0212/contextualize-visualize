@@ -125,20 +125,21 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
-      this.setupAxisElements();
 
       this.contentSel = this.svgSel.append("g");
 
       // Setup the zoom behavior.
       if (this.zoomExt) {
         this.svgSel
-          .call(this.zoomExt)
-          .call(this.zoomExt.transform, d3.zoomIdentity);
+        .call(this.zoomExt)
+        .call(this.zoomExt.transform, d3.zoomIdentity);
       }
 
       // Create the line plot elements.
       this.linesSel = this.contentSel.append("g").selectAll("line");
       this.pointsSel = this.contentSel.append("g").selectAll("circle");
+
+      this.setupAxisElements();
     }
   }
 
