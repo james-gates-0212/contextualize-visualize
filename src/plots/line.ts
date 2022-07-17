@@ -258,7 +258,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
   /** Renders a plot of the graph. */
   public render() {
     const dataID = (combined: string, id: string) => combined.substring(0, combined.lastIndexOf(id) - 1);
-    const dataIDFromPoint = (d: ILinePoint, i: number) => dataID(this._lineIDs[i], d.id);
+    const dataIDFromPoint = (d: ILinePoint, i: number) => dataID(this._pointIDs[i], d.id);
     const dataIDFromLine = (d: TLineSegment, i: number) => dataID(this._lineIDs[i], d.map((e) => e.id).join("-"));
     const parentFromPoint = (d: ILinePoint, i: number) => this.data.find((e) => e.id === dataIDFromPoint(d, i));
     const parentFromLine = (d: TLineSegment, i: number) => this.data.find((e) => e.id === dataIDFromLine(d, i));
