@@ -22,15 +22,11 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
   protected _scaleColor: ScaleColor;
   // #endregion
 
-  public constructor(
-    data?: TData,
-    layout?: TLayout,
-    container?: HTMLElement
-  ) {
+  public constructor(data?: TData, layout?: TLayout, container?: HTMLElement) {
     super();
 
-    this._data = data ?? {} as TData;
-    this._layout = layout ?? {} as TLayout;
+    this._data = data ?? ({} as TData);
+    this._layout = layout ?? ({} as TLayout);
     this._container = container;
 
     this._scaleColor = d3.scaleSequential();
@@ -65,7 +61,6 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
     this._data = value;
   }
   // #endregion
-
 }
 
 export default BasePlot;

@@ -43,7 +43,7 @@ for (let i = -100; i <= 100; i += 2) {
 }
 SimpleLine.args = {
   data: {
-    data
+    data,
   },
   layout: {
     axes: {

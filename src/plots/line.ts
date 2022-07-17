@@ -63,11 +63,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(
-    data?: ILinePlotData,
-    layout?: ILinePlotLayout,
-    container?: HTMLElement,
-  ) {
+  public constructor(data?: ILinePlotData, layout?: ILinePlotLayout, container?: HTMLElement) {
     super(data, layout, container);
 
     // Set the data.
@@ -94,24 +90,17 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
     // Create the scalars for the data.
     this.scaleX = d3
       .scaleLinear()
-      .domain([
-        this.layout.axes?.x?.minimum ?? extentX[0] ?? 0,
-        this.layout.axes?.x?.maximum ?? extentX[1] ?? 1,
-      ])
+      .domain([this.layout.axes?.x?.minimum ?? extentX[0] ?? 0, this.layout.axes?.x?.maximum ?? extentX[1] ?? 1])
       .range([margin.left, size.width - margin.right]);
     this.scaleY = d3
       .scaleLinear()
-      .domain([
-        this.layout.axes?.y?.minimum ?? extentY[0] ?? 0,
-        this.layout.axes?.y?.maximum ?? extentY[1] ?? 1,
-      ])
+      .domain([this.layout.axes?.y?.minimum ?? extentY[0] ?? 0, this.layout.axes?.y?.maximum ?? extentY[1] ?? 1])
       .range([size.height - margin.bottom, margin.top]);
 
     this.scaleColor = findColormap(this._data.colormap);
-    if (extentColor[0] !== undefined && extentColor[1] !== undefined)
-      this.scaleColor.domain(extentColor);
+    if (extentColor[0] !== undefined && extentColor[1] !== undefined) this.scaleColor.domain(extentColor);
 
-    this._lines = this._data.data.map((pt, i, data) => i === data.length - 1 ? [pt] : [pt, data[i + 1]]);
+    this._lines = this._data.data.map((pt, i, data) => (i === data.length - 1 ? [pt] : [pt, data[i + 1]]));
   }
 
   /** Initializes the elements for the line plot. */
@@ -125,14 +114,11 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
         if (event.target === event.currentTarget) this.notify("clickSpace");
       });
 
-
       this.contentSel = this.svgSel.append("g");
 
       // Setup the zoom behavior.
       if (this.zoomExt) {
-        this.svgSel
-        .call(this.zoomExt)
-        .call(this.zoomExt.transform, d3.zoomIdentity);
+        this.svgSel.call(this.zoomExt).call(this.zoomExt.transform, d3.zoomIdentity);
       }
 
       // Create the line plot elements.
@@ -171,10 +157,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
         .call(
           this.zoomExt.transform as any,
           d3.zoomIdentity
-            .scale(
-              (1 + padding) *
-                Math.max((xMax - xMin) / width, (yMax - yMin) / height)
-            )
+            .scale((1 + padding) * Math.max((xMax - xMin) / width, (yMax - yMin) / height))
             .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
         );
     }
@@ -215,7 +198,10 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
   public render() {
     // Update the points.
     this.pointsSel = this.pointsSel
-      ?.data(this._data.data.filter(d => d.style?.fillRadius ?? 0), d => d.id)
+      ?.data(
+        this._data.data.filter((d) => d.style?.fillRadius ?? 0),
+        (d) => d.id
+      )
       .join("circle")
       .on("click", (e: PointerEvent, d) => {
         switch (e.detail) {
@@ -232,39 +218,26 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       .attr("cx", (d) => this.scaleX(d.x ?? 0))
       .attr("cy", (d) => this.scaleY(d.y ?? 0))
       .attr("r", (d) => d.style?.fillRadius ?? 0)
-      .attr("fill", (d) =>
-        d.value !== undefined
-          ? this.scaleColor(d.value)
-          : d.style?.fillColor ?? "#53b853"
-      )
-      .attr("stroke", (d) =>
-        d.weight !== undefined
-          ? this.scaleColor(d.weight)
-          : d.style?.strokeColor ?? "none"
-      )
+      .attr("fill", (d) => (d.value !== undefined ? this.scaleColor(d.value) : d.style?.fillColor ?? "#53b853"))
+      .attr("stroke", (d) => (d.weight !== undefined ? this.scaleColor(d.weight) : d.style?.strokeColor ?? "none"))
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 0);
 
-    const connectLine = d3.line<[number, number]>()
-      .defined(d => !isNaN(d[1]))
-      .x(d => this.scaleX(d[0]))
-      .y(d => this.scaleY(d[1]));
+    const connectLine = d3
+      .line<[number, number]>()
+      .defined((d) => !isNaN(d[1]))
+      .x((d) => this.scaleX(d[0]))
+      .y((d) => this.scaleY(d[1]));
 
     this.linesSel = this.linesSel
       ?.data(this._lines)
       .join("path")
-      .attr("d", d => connectLine(d.map(e => [e.x ?? 0, e.y ?? 0])))
-      .attr("stroke", d =>
-        d[0].value !== undefined
-          ? this.scaleColor(d[0].value)
-          : d[0].style?.strokeColor ?? "#53b853")
-      .attr("stroke-width", d => d[0].style?.strokeWidth ?? 1);
+      .attr("d", (d) => connectLine(d.map((e) => [e.x ?? 0, e.y ?? 0])))
+      .attr("stroke", (d) =>
+        d[0].value !== undefined ? this.scaleColor(d[0].value) : d[0].style?.strokeColor ?? "#53b853"
+      )
+      .attr("stroke-width", (d) => d[0].style?.strokeWidth ?? 1);
   }
 }
 
 export default LinePlot;
-export type {
-  ILinePoint,
-  ILinePlotData,
-  ILinePlotLayout,
-  ILinePlotEvents,
-};
+export type { ILinePoint, ILinePlotData, ILinePlotLayout, ILinePlotEvents };

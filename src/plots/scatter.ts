@@ -77,11 +77,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(
-    data?: IScatterPlotData<IScatterPoint2d>,
-    layout?: IScatterPlotLayout,
-    container?: HTMLElement,
-  ) {
+  public constructor(data?: IScatterPlotData<IScatterPoint2d>, layout?: IScatterPlotLayout, container?: HTMLElement) {
     super(data, layout, container);
 
     // Set the data.
@@ -107,22 +103,15 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
     // Create the scalars for the data.
     this.scaleX = d3
       .scaleLinear()
-      .domain([
-        this.layout.axes?.x?.minimum ?? extentX[0] ?? 0,
-        this.layout.axes?.x?.maximum ?? extentX[1] ?? 1,
-      ])
+      .domain([this.layout.axes?.x?.minimum ?? extentX[0] ?? 0, this.layout.axes?.x?.maximum ?? extentX[1] ?? 1])
       .range([margin.left, size.width - margin.right]);
     this.scaleY = d3
       .scaleLinear()
-      .domain([
-        this.layout.axes?.y?.minimum ?? extentY[0] ?? 0,
-        this.layout.axes?.y?.maximum ?? extentY[1] ?? 1,
-      ])
+      .domain([this.layout.axes?.y?.minimum ?? extentY[0] ?? 0, this.layout.axes?.y?.maximum ?? extentY[1] ?? 1])
       .range([size.height - margin.bottom, margin.top]);
 
     this.scaleColor = findColormap(this._data.colormap);
-    if (extentColor[0] !== undefined && extentColor[1] !== undefined)
-      this.scaleColor.domain(extentColor);
+    if (extentColor[0] !== undefined && extentColor[1] !== undefined) this.scaleColor.domain(extentColor);
   }
 
   /** Initializes the elements for the scatter plot. */
@@ -140,9 +129,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
 
       // Setup the zoom behavior.
       if (this.zoomExt) {
-        this.svgSel
-          .call(this.zoomExt)
-          .call(this.zoomExt.transform, d3.zoomIdentity);
+        this.svgSel.call(this.zoomExt).call(this.zoomExt.transform, d3.zoomIdentity);
       }
 
       // Create the scatter plot elements.
@@ -180,10 +167,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
         .call(
           this.zoomExt.transform as any,
           d3.zoomIdentity
-            .scale(
-              (1 + padding) *
-                Math.max((xMax - xMin) / width, (yMax - yMin) / height)
-            )
+            .scale((1 + padding) * Math.max((xMax - xMin) / width, (yMax - yMin) / height))
             .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
         );
     }
@@ -241,11 +225,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
       .attr("cx", (d) => this.scaleX(d.x))
       .attr("cy", (d) => this.scaleY(d.y))
       .attr("r", (d) => d.radius ?? d.style?.fillRadius ?? 5)
-      .attr("fill", (d) =>
-        d.value !== undefined
-          ? this.scaleColor(d.value)
-          : d.style?.fillColor ?? "#53b853"
-      )
+      .attr("fill", (d) => (d.value !== undefined ? this.scaleColor(d.value) : d.style?.fillColor ?? "#53b853"))
       .attr("stroke", (d) => d.style?.strokeColor ?? "none")
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 0);
   }
@@ -258,7 +238,7 @@ class ScatterPlot2d extends PlotWithAxis<IScatterPlotData<IScatterPoint2d>, ISca
 /**
  * An object that persists, renders, and handles information about a scatter plot in 3D.
  */
-class ScatterPlot3d extends EventDriver<IPlotEvents> {
+class ScatterPlot3d extends EventDriver<IScatterPlotEvents> {
   // #region DOM
   private _container?: HTMLElement;
 
@@ -272,24 +252,12 @@ class ScatterPlot3d extends EventDriver<IPlotEvents> {
   private _data: IScatterPlotData<IScatterPoint3d>;
   private _layout: IScatterPlotLayout;
 
-  private mapping: Map<
-    string,
-    [
-      IScatterPoint3d,
-      three.Mesh<three.DodecahedronGeometry, three.MeshLambertMaterial>
-    ]
-  >;
+  private mapping: Map<string, [IScatterPoint3d, three.Mesh<three.DodecahedronGeometry, three.MeshLambertMaterial>]>;
 
-  private scaleColor:
-    | d3.ScaleSequential<string>
-    | d3.ScaleOrdinal<number, string>;
+  private scaleColor: d3.ScaleSequential<string> | d3.ScaleOrdinal<number, string>;
   // #endregion
 
-  public constructor(
-    data?: IScatterPlotData<IScatterPoint3d>,
-    layout?: IScatterPlotLayout,
-    container?: HTMLElement
-  ) {
+  public constructor(data?: IScatterPlotData<IScatterPoint3d>, layout?: IScatterPlotLayout, container?: HTMLElement) {
     super();
 
     // Set the data.
@@ -338,8 +306,7 @@ class ScatterPlot3d extends EventDriver<IPlotEvents> {
     const extentColor = d3.extent(this._data.data, (d) => d.value);
 
     this.scaleColor = findColormap(this._data.colormap);
-    if (extentColor[0] !== undefined && extentColor[1] !== undefined)
-      this.scaleColor.domain(extentColor);
+    if (extentColor[0] !== undefined && extentColor[1] !== undefined) this.scaleColor.domain(extentColor);
   }
   /** Initializes the camera aspect ratio and size. */
   private setupCamera() {
@@ -374,11 +341,7 @@ class ScatterPlot3d extends EventDriver<IPlotEvents> {
       (extentY[0] + extentY[1]) / 2,
       (extentZ[0] + extentZ[1]) / 2
     );
-    this.camera.lookAt(
-      (extentX[0] + extentX[1]) / 2,
-      (extentY[0] + extentY[1]) / 2,
-      (extentZ[0] + extentZ[1]) / 2
-    );
+    this.camera.lookAt((extentX[0] + extentX[1]) / 2, (extentY[0] + extentY[1]) / 2, (extentZ[0] + extentZ[1]) / 2);
     this.camera.position.x = (extentX[0] + extentX[1]) / 2;
     this.camera.position.y = (extentY[0] + extentY[1]) / 2;
     this.camera.position.z = extentZ[0] - (extentZ[1] - extentZ[0]) * padding;
@@ -418,10 +381,7 @@ class ScatterPlot3d extends EventDriver<IPlotEvents> {
       if (!this.mapping.has(point.id)) {
         // Construct the new mesh.
         const material = new three.MeshLambertMaterial({
-          color:
-            point.value === undefined
-              ? point.style?.fillColor ?? 0xffffff
-              : this.scaleColor(point.value),
+          color: point.value === undefined ? point.style?.fillColor ?? 0xffffff : this.scaleColor(point.value),
         });
         const geometry = new three.DodecahedronGeometry(point.radius, 1);
         const mesh = new three.Mesh(geometry, material);
@@ -452,10 +412,7 @@ class ScatterPlot3d extends EventDriver<IPlotEvents> {
       // If anything has changed, simply re-create the mesh.
       if (point !== existPoint) {
         const material = new three.MeshLambertMaterial({
-          color:
-            point.value === undefined
-              ? point.style?.fillColor ?? 0xffffff
-              : this.scaleColor(point.value),
+          color: point.value === undefined ? point.style?.fillColor ?? 0xffffff : this.scaleColor(point.value),
         });
         const geometry = new three.DodecahedronGeometry(point.radius, 1);
         const mesh = new three.Mesh(geometry, material);

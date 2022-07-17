@@ -1,11 +1,5 @@
-import * as d3 from "d3";
 import { Story, Meta } from "@storybook/html";
-import {
-  ScatterPlot2d,
-  IScatterPoint2d,
-  IScatterPlotData,
-  IScatterPlotLayout,
-} from "plots";
+import { ScatterPlot2d, IScatterPoint2d, IScatterPlotData, IScatterPlotLayout } from "plots";
 
 interface IScatterPlot {
   /** The data to supply the scatter plot. */
@@ -50,12 +44,12 @@ SimpleScatter.args = {
   layout: {
     axes: {
       x: {
-        label: "Simple Scatter-X"
+        label: "Simple Scatter-X",
       },
       y: {
-        label: "Simple Scatter-Y"
-      }
-    }
+        label: "Simple Scatter-Y",
+      },
+    },
   },
 };
 
@@ -76,13 +70,13 @@ RandomScatter.args = {
     axes: {
       x: {
         label: "Random Scatter-X",
-        showLines: true
+        showLines: true,
       },
       y: {
         label: "Random Scatter-Y",
-        showLines: true
-      }
-    }
+        showLines: true,
+      },
+    },
   },
 };
 
@@ -105,15 +99,15 @@ ColormapScatter.args = {
     axes: {
       x: {
         label: "Colormap Scatter-X",
-        showLines: true
+        showLines: true,
       },
       y: {
-        label: "Colormap Scatter-Y"
-      }
+        label: "Colormap Scatter-Y",
+      },
     },
     style: {
-      color: "red"
-    }
+      color: "red",
+    },
   },
 };
 
@@ -140,14 +134,14 @@ DifferentRadiiScatter.args = {
   layout: {
     axes: {
       x: {
-        label: "Different Radii Scatter-X"
+        label: "Different Radii Scatter-X",
       },
       y: {
-        label: "Different Radii Scatter-Y"
-      }
+        label: "Different Radii Scatter-Y",
+      },
     },
     style: {
-      color: "green"
-    }
+      color: "green",
+    },
   },
 };

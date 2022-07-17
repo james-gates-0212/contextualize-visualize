@@ -60,11 +60,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(
-    data?: IHistogramPlotData,
-    layout?: IHistogramPlotLayout,
-    container?: HTMLElement,
-  ) {
+  public constructor(data?: IHistogramPlotData, layout?: IHistogramPlotLayout, container?: HTMLElement) {
     super(data, layout, container);
 
     // Set the data.
@@ -90,9 +86,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
   /** Calculate a total to normalize. */
   private total2Normalize() {
-    return this.layout.normalize
-      ? d3.sum(this.data.data, d => d.frequency)
-      : 1;
+    return this.layout.normalize ? d3.sum(this.data.data, (d) => d.frequency) : 1;
   }
 
   /** Initializes the scales used to transform data for the histogram plot. */
@@ -102,7 +96,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
     // Compute values.
     const rangePoints: number[] = [];
-    this.data.data.forEach(data => {
+    this.data.data.forEach((data) => {
       rangePoints.push(data.min);
       rangePoints.push(data.max);
     });
@@ -122,14 +116,11 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .range(this.isHorizontal() ? scaleRangeX : scaleRangeY);
 
     const total = this.total2Normalize();
-    const extentFreq = d3.extent(this.data.data, d => d.frequency / total);
+    const extentFreq = d3.extent(this.data.data, (d) => d.frequency / total);
 
     const scaleFreq = d3
       .scaleLinear()
-      .domain([
-        0,
-        this.layout.axes?.y?.maximum ?? extentFreq[1] ?? 0,
-      ])
+      .domain([0, this.layout.axes?.y?.maximum ?? extentFreq[1] ?? 0])
       .nice()
       .range(this.isHorizontal() ? scaleRangeY : scaleRangeX);
 
@@ -150,11 +141,8 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       this.contentSel = this.svgSel.append("g");
 
       // Create the histogram plot elements.
-      this.rectsSel = this.contentSel.append("g")
-        .style("cursor", "pointer")
-        .selectAll("rect");
-      this.freqsSel = this.contentSel.append("g")
-        .selectAll("text");
+      this.rectsSel = this.contentSel.append("g").style("cursor", "pointer").selectAll("rect");
+      this.freqsSel = this.contentSel.append("g").selectAll("text");
 
       this.setupAxisElements();
     }
@@ -162,15 +150,13 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
   /** Bind the events for the elements. */
   private setupEvents() {
-    this
-      .on("singleClickBin", (bin) => {
-        bin.selected = !bin.selected;
-        this.render();
-      })
-      .on("clickSpace", () => {
-        this._data.data.forEach(bin => bin.selected = false);
-        this.render();
-      });
+    this.on("singleClickBin", (bin) => {
+      bin.selected = !bin.selected;
+      this.render();
+    }).on("clickSpace", () => {
+      this._data.data.forEach((bin) => (bin.selected = false));
+      this.render();
+    });
   }
 
   // #region Plot Getters/Setters
@@ -215,18 +201,10 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
     const strokeWidth = (d: IHistogramBin) => d.style?.strokeWidth ?? 0;
 
     const x = (d: IHistogramBin) =>
-      (
-        this.isHorizontal()
-          ? (scaleValues(d.min) + 1)
-          : scaleValues(0)
-      ) + strokeWidth(d) / 2;
+      (this.isHorizontal() ? scaleValues(d.min) + 1 : scaleValues(0)) + strokeWidth(d) / 2;
 
     const y = (d: IHistogramBin) =>
-      (
-        this.isHorizontal()
-          ? scaleFreq(frequency(d))
-          : (scaleFreq(d.max) + 1)
-      ) + strokeWidth(d) / 2;
+      (this.isHorizontal() ? scaleFreq(frequency(d)) : scaleFreq(d.max) + 1) + strokeWidth(d) / 2;
 
     const width = (d: IHistogramBin) =>
       this.isHorizontal()
@@ -241,7 +219,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
     const offset = "1em";
 
     const topX = (d: IHistogramBin) => x(d) + width(d) / (this.isHorizontal() ? 2 : 1);
-    const topY = (d: IHistogramBin) => y(d) + (this.isHorizontal() ? 0 : (height(d) / 2));
+    const topY = (d: IHistogramBin) => y(d) + (this.isHorizontal() ? 0 : height(d) / 2);
 
     const onClickBin = (e: PointerEvent, bin: IHistogramBin) => {
       switch (e.detail) {
@@ -254,12 +232,13 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
     };
 
     // Update the bins.
-    this.rectsSel = this.rectsSel?.data(this._data.data.sort((a, b) => b.frequency - a.frequency))
+    this.rectsSel = this.rectsSel
+      ?.data(this._data.data.sort((a, b) => b.frequency - a.frequency))
       .join("rect")
-      .attr("fill", d => d.style?.fillColor ?? "#53b853")
-      .attr("stroke", d => d.style?.strokeColor ?? "none")
+      .attr("fill", (d) => d.style?.fillColor ?? "#53b853")
+      .attr("stroke", (d) => d.style?.strokeColor ?? "none")
       .style("paint-order", "fill")
-      .attr("stroke-width", d => d.style?.strokeWidth ?? 0)
+      .attr("stroke-width", (d) => d.style?.strokeWidth ?? 0)
       .attr("x", x)
       .attr("y", y)
       .attr("width", width)
@@ -267,14 +246,20 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .on("click", onClickBin);
 
     this.rectsSel?.selectAll("title").remove();
-    this.rectsSel?.append("title")
-      .text(d => [
-        `${d.min} ≤ x < ${d.max}`,
-        `${this.layout.normalize ? "Normalized: " : ""}${d3.format(",")(frequency(d))}`,
-        `${this.layout.normalize ? "Original: " + d3.format(",")(d.frequency) : ""}`,
-      ].join("\n").trim());
+    this.rectsSel
+      ?.append("title")
+      .text((d) =>
+        [
+          `${d.min} ≤ x < ${d.max}`,
+          `${this.layout.normalize ? "Normalized: " : ""}${d3.format(",")(frequency(d))}`,
+          `${this.layout.normalize ? "Original: " + d3.format(",")(d.frequency) : ""}`,
+        ]
+          .join("\n")
+          .trim()
+      );
 
-    this.freqsSel = this.freqsSel?.data(this._data.data)
+    this.freqsSel = this.freqsSel
+      ?.data(this._data.data)
       .join("text")
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", this.isHorizontal() ? "middle" : "start")
@@ -282,15 +267,10 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .attr("dy", this.isHorizontal() ? "-" + offset : null)
       .attr("x", topX)
       .attr("y", topY)
-      .text(d => d.selected ? d3.format(",")(frequency(d)) : "")
+      .text((d) => (d.selected ? d3.format(",")(frequency(d)) : ""))
       .on("click", onClickBin);
   }
 }
 
 export default HistogramPlot;
-export type {
-  IHistogramBin,
-  IHistogramPlotData,
-  IHistogramPlotLayout,
-  IHistogramPlotEvents,
-};
+export type { IHistogramBin, IHistogramPlotData, IHistogramPlotLayout, IHistogramPlotEvents };

@@ -220,15 +220,12 @@ const TreeLayoutTemplate: Story<IGraphPlot> = (args) => {
     interval = undefined;
   }
 
-  const treeLayouts = [
-    "none",
-    "horizontal",
-    "vertical",
-    "radial",
-  ];
+  const treeLayouts = ["none", "horizontal", "vertical", "radial"];
 
   interval = setInterval(() => {
-    plot.treeLayout = treeLayouts.find((t, i, a) => a[(a.length + i - 1) % a.length] == plot.treeLayout) as TTreeLayout;
+    plot.treeLayout = treeLayouts.find(
+      (t, i, a) => a[(a.length + i - 1) % a.length] == plot.treeLayout
+    ) as TTreeLayout;
     plot.simulate();
     plot.render();
   }, 5000);

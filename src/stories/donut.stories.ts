@@ -1,10 +1,5 @@
 import { Story, Meta } from "@storybook/html";
-import {
-  DonutPlot,
-  IDonutBin,
-  IDonutPlotData,
-  IDonutPlotLayout,
-} from "plots";
+import { DonutPlot, IDonutBin, IDonutPlotData, IDonutPlotLayout } from "plots";
 
 interface IDonutPlot {
   /** The data to supply the line plot. */
@@ -33,43 +28,56 @@ const Template: Story<IDonutPlot> = (args) => {
   return container;
 };
 
-const data:IDonutBin[] = [{
-  label: "<5",
-  value: 19912018,
-}, {
-  label: "5-9",
-  value: 20501982,
-}, {
-  label: "10-14",
-  value: 20679786,
-}, {
-  label: "15-19",
-  value: 21354481,
-}, {
-  label: "20-24",
-  value: 22604232,
-}, {
-  label: "25-29",
-  value: 21698010,
-}, {
-  label: "30-34",
-  value: 21183639,
-}, {
-  label: "35-39",
-  value: 19855782,
-}, {
-  label: "40-44",
-  value: 20796128,
-}, {
-  label: "45-49",
-  value: 21370368,
-}, {
-  label: "50-54",
-  value: 22525490,
-}, {
-  label: "55-59",
-  value: 21001947,
-},];
+const data: IDonutBin[] = [
+  {
+    label: "<5",
+    value: 19912018,
+  },
+  {
+    label: "5-9",
+    value: 20501982,
+  },
+  {
+    label: "10-14",
+    value: 20679786,
+  },
+  {
+    label: "15-19",
+    value: 21354481,
+  },
+  {
+    label: "20-24",
+    value: 22604232,
+  },
+  {
+    label: "25-29",
+    value: 21698010,
+  },
+  {
+    label: "30-34",
+    value: 21183639,
+  },
+  {
+    label: "35-39",
+    value: 19855782,
+  },
+  {
+    label: "40-44",
+    value: 20796128,
+  },
+  {
+    label: "45-49",
+    value: 21370368,
+  },
+  {
+    label: "50-54",
+    value: 22525490,
+  },
+  {
+    label: "55-59",
+    value: 21001947,
+  },
+];
 
 export const SimpleDonut = Template.bind({});
 SimpleDonut.args = {
@@ -99,49 +107,56 @@ ColormapDonut.args = {
 export const CustomStyleDonut = Template.bind({});
 CustomStyleDonut.args = {
   data: {
-    data: [{
-      label: "<5",
-      value: 19912018,
-      style: {
-        fillColor: "red",
-        fillRadius: 40,
+    data: [
+      {
+        label: "<5",
+        value: 19912018,
+        style: {
+          fillColor: "red",
+          fillRadius: 40,
+        },
       },
-    }, {
-      label: "5-9",
-      value: 20501982,
-      style: {
-        fillColor: "green",
-        fillRadius: 50,
+      {
+        label: "5-9",
+        value: 20501982,
+        style: {
+          fillColor: "green",
+          fillRadius: 50,
+        },
       },
-    }, {
-      label: "10-14",
-      value: 20679786,
-      style: {
-        fillColor: "blue",
-        fillRadius: 60,
+      {
+        label: "10-14",
+        value: 20679786,
+        style: {
+          fillColor: "blue",
+          fillRadius: 60,
+        },
       },
-    },{
-      label: "15-20",
-      value: 30679786,
-      style: {
-        fillColor: "#ccc",
-        fillRadius: 70,
+      {
+        label: "15-20",
+        value: 30679786,
+        style: {
+          fillColor: "#ccc",
+          fillRadius: 70,
+        },
       },
-    },{
-      label: "20-25",
-      value: 25679786,
-      style: {
-        fillColor: "#7ff",
-        fillRadius: 50,
+      {
+        label: "20-25",
+        value: 25679786,
+        style: {
+          fillColor: "#7ff",
+          fillRadius: 50,
+        },
       },
-    },{
-      label: "25-30",
-      value: 50679786,
-      style: {
-        fillColor: "#354",
-        fillRadius: 30,
+      {
+        label: "25-30",
+        value: 50679786,
+        style: {
+          fillColor: "#354",
+          fillRadius: 30,
+        },
       },
-    },],
+    ],
   },
   layout: {
     label: "Population by age",
@@ -149,7 +164,6 @@ CustomStyleDonut.args = {
     radialLabels: true,
   },
 };
-
 
 export const PercentageDonut = Template.bind({});
 PercentageDonut.args = {
@@ -166,19 +180,22 @@ PercentageDonut.args = {
 export const GenderDonut = Template.bind({});
 GenderDonut.args = {
   data: {
-    data: [{
-      label: "Male",
-      value: 54687123,
-      style: {
-        fillColor: "blue",
+    data: [
+      {
+        label: "Male",
+        value: 54687123,
+        style: {
+          fillColor: "blue",
+        },
       },
-    },{
-      label: "Female",
-      value: 86471235,
-      style: {
-        fillColor: "pink",
+      {
+        label: "Female",
+        value: 86471235,
+        style: {
+          fillColor: "pink",
+        },
       },
-    },],
+    ],
   },
   layout: {
     label: "Population by gender",
@@ -215,10 +232,10 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
   ];
 
   const data: IDonutPlotData = {
-    data: countries.map(country => ({
-        label: country,
-        value: 0,
-      })),
+    data: countries.map((country) => ({
+      label: country,
+      value: 0,
+    })),
   };
   const plot = new DonutPlot(data, layout, container);
 
