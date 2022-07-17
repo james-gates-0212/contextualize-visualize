@@ -54,11 +54,7 @@ function createSvg<TPlot extends IPlotLayout<string>>(
     ? `${-size.width / 2} ${-size.height / 2} ${size.width} ${size.height}`
     : `0 0 ${size.width} ${size.height}`;
   if (container) {
-    const svg = d3
-      .select(container)
-      .append("svg")
-      .attr("viewBox", viewBox)
-      .attr("style", style);
+    const svg = d3.select(container).append("svg").attr("viewBox", viewBox).attr("style", style);
 
     // Return the SVG element and relevant computed information.
     return { size, margin, style, viewBox, svg } as any;

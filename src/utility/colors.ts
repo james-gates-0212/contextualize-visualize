@@ -118,8 +118,9 @@ const findColormap = (name?: string) => {
   if (!name) return d3.scaleSequential(defaultColors);
 
   // Try categorical.
-  if (name in schemesOrdinal)
+  if (name in schemesOrdinal) {
     return d3.scaleOrdinal<number, string>(schemesOrdinal[name]);
+  }
 
   // Try interpolate to categorical.
   const match = name.match(/([a-zA-Z]+)(\d+)/);
@@ -131,8 +132,9 @@ const findColormap = (name?: string) => {
     // Ideally, these should work identically in most circumstances.
     if (name in schemesHues) {
       const scheme = schemesHues[name][index];
-      if (scheme)
+      if (scheme) {
         return d3.scaleOrdinal<number, string>(schemesHues[name][index]);
+      }
     } else {
       return d3.scaleSequential(interpolates[name]);
     }
