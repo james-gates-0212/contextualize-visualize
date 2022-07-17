@@ -3,7 +3,7 @@ import { LinePlot, ILinePoint, ILinePlotData, ILinePlotLayout } from "plots";
 
 interface ILinePlot {
   /** The data to supply the line plot. */
-  data?: ILinePlotData<ILinePoint>;
+  data?: ILinePlotData | ILinePlotData[];
   /** The layout to use for the line plot. */
   layout: ILinePlotLayout;
 }
@@ -43,6 +43,7 @@ for (let i = -100; i <= 100; i += 2) {
 }
 SimpleLine.args = {
   data: {
+    id: "test",
     data,
   },
   layout: {
@@ -72,6 +73,7 @@ for (let k = 0; k < Math.PI * 8; k += 0.1) {
 }
 DifferentColorLine.args = {
   data: {
+    id: "test",
     data,
     colormap: "rainbow",
   },
@@ -98,6 +100,7 @@ for (let k = 0, show = true; k < Math.PI * 4; k += 0.05, show = !show) {
 }
 DashLine.args = {
   data: {
+    id: "test",
     data,
     colormap: "rainbow",
   },
@@ -128,6 +131,7 @@ data.push({
 });
 SpirographLine.args = {
   data: {
+    id: "test",
     data,
     colormap: "rainbow",
   },
@@ -140,7 +144,104 @@ SpirographLine.args = {
   },
 };
 
+export const MultiLines = Template.bind({});
+let multiData: ILinePlotData[] = [];
+data = [];
+for (let t = 0; t <= 2 * Math.PI; t += 0.1) {
+  data.push({
+    id: `${t}`,
+    x: t,
+    y: Math.sin(t),
+  });
+}
+multiData.push({
+  id: "sin",
+  label: "sin",
+  data: data,
+  color: "red",
+});
+data = [];
+for (let t = 0; t <= 2 * Math.PI; t += 0.1) {
+  data.push({
+    id: `${t}`,
+    x: t,
+    y: Math.cos(t),
+  });
+}
+multiData.push({
+  id: "cos",
+  label: "cos",
+  data: data,
+  color: "blue",
+});
+MultiLines.args = {
+  data: multiData,
+  layout: {
+    axes: {
+      x: {
+        label: "Multi Lines",
+      },
+    },
+  },
+};
+
 let interval: NodeJS.Timer | undefined = undefined;
+
+const RealtimeTemplate: Story<ILinePlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the line plot.
+  const dataGermany: ILinePlotData<ILinePoint> = {
+    id: "Germany",
+    data: [{ id: "0", x: 0, y: 0 }],
+    color: "blue",
+  };
+  const dataFrance: ILinePlotData<ILinePoint> = {
+    id: "France",
+    data: [{ id: "0", x: 0, y: 0 }],
+    color: "green",
+  };
+  const { layout } = args;
+  const plot = new LinePlot([dataGermany, dataFrance], layout, container);
+
+  plot.render();
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
+  }
+  const addNewPoint = (data: ILinePlotData) => {
+    const length = data.data.length;
+    const datum = data.data[length - 1];
+    const u1 = Math.random();
+    const u2 = Math.random();
+    const n = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    const x = datum.x! + 1;
+    const y = datum.y! + n;
+    data.data.push({ id: `${length}`, x, y });
+  };
+  interval = setInterval(() => {
+    addNewPoint(dataGermany);
+    addNewPoint(dataFrance);
+    plot.data = [dataGermany, dataFrance];
+    plot.render();
+  }, 50);
+
+  return container;
+};
+
+export const RealtimeLine = RealtimeTemplate.bind({});
+RealtimeLine.args = {
+  layout: {
+    axes: {
+      x: { label: "Time (in days)" },
+      y: { label: "Relative Market Value ($/share)", showLines: true },
+    },
+  },
+};
+
 const MarketTemplate: Story<ILinePlot> = (args) => {
   // Construct the container.
   let container: HTMLDivElement;
@@ -149,6 +250,7 @@ const MarketTemplate: Story<ILinePlot> = (args) => {
 
   // Set up the line plot.
   const data: ILinePlotData<ILinePoint> = {
+    id: "test",
     data: [{ id: "0", x: 0, y: 0, value: 0 }],
     colormap: "RdYlGn",
   };

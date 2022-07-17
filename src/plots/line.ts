@@ -25,8 +25,14 @@ interface ILinePoint {
 
 /** Represents the data contained in the plot. */
 interface ILinePlotData<TDatum extends ILinePoint = ILinePoint> {
+  /** A unique identifier for data to plot. */
+  id: string;
+  /** The text label for data to plot. */
+  label?: string;
   /** The data to plot. */
   data: TDatum[];
+  /** The color to use in plot. */
+  color?: string;
   /** The colormap to use for mapping values to colors. */
   colormap?: string;
 }
@@ -44,16 +50,26 @@ interface ILinePlotEvents {
   clickSpace: () => void;
 }
 
+/** The named or indexed min and max simultaneously. */
+interface IExtents {
+  /** The indexed min & max simultaneously. */
+  [key: string | number]: [number | undefined, number | undefined];
+}
+
 /**
  * An object that persists, renders, and handles information about a line plot in 2D.
  */
-class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEvents> {
+class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotEvents> {
   // #region DOM
   private pointsSel?: Selection<SVGGElement, ILinePoint, SVGGElement>;
   private linesSel?: Selection<SVGGElement, TLineSegment, SVGGElement>;
+  private labelsSel?: Selection<SVGGElement, ILinePlotData, SVGGElement>;
   // #endregion
 
   // #region Data
+  private _pointIDs: string[];
+  private _points: ILinePoint[];
+  private _lineIDs: string[];
   private _lines: TLineSegment[];
   // #endregion
 
@@ -63,18 +79,46 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(data?: ILinePlotData, layout?: ILinePlotLayout, container?: HTMLElement) {
-    super(data, layout, container);
+  public constructor(data?: ILinePlotData | ILinePlotData[], layout?: ILinePlotLayout, container?: HTMLElement) {
+    super(LinePlot.safeData(data), layout, container);
 
     // Set the data.
     this._container = container;
     this._layout = layout ?? {};
-    this._data = data ?? { data: [] };
+    this._data = LinePlot.safeData(data);
+    this._pointIDs = [];
+    this._points = [];
+    this._lineIDs = [];
     this._lines = [];
 
     // Perform setup tasks.
     this.setupElements();
     this.setupScales();
+  }
+
+  /**
+   * Make a safe data for a line plot.
+   * @param data to plot.
+   * @returns ILinePlotData[]
+   */
+  static safeData(data?: ILinePlotData | ILinePlotData[]): ILinePlotData[] {
+    return !data ? [] : Array.isArray(data) ? data : [data];
+  }
+
+  /**
+   * Get the min and max simultaneously from the data array to plot.
+   * @param data The data array to plot.
+   * @param cb The callback to pick a value for extent.
+   * @returns The min and max simultaneously.
+   */
+  private extent(data: ILinePlotData[], cb: Function) {
+    const numbers: number[] = [];
+    data.forEach((e) => {
+      e.data.forEach((d) => {
+        numbers.push(cb(d));
+      });
+    });
+    return d3.extent(numbers);
   }
 
   /** Initializes the scales used to transform data for the line plot. */
@@ -83,9 +127,9 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
     const { size, margin } = createSvg(undefined, this.layout);
 
     // Find the range of values.
-    const extentX = d3.extent(this._data.data, (d) => d.x);
-    const extentY = d3.extent(this._data.data, (d) => d.y);
-    const extentColor = d3.extent(this._data.data, (d) => d.value);
+    const extentX = this.extent(this.data, (d: ILinePoint) => d.x);
+    const extentY = this.extent(this.data, (d: ILinePoint) => d.y);
+    const extentColor = this.extent(this.data, (d: ILinePoint) => d.value);
 
     // Create the scalars for the data.
     this.scaleX = d3
@@ -97,10 +141,26 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       .domain([this.layout.axes?.y?.minimum ?? extentY[0] ?? 0, this.layout.axes?.y?.maximum ?? extentY[1] ?? 1])
       .range([size.height - margin.bottom, margin.top]);
 
-    this.scaleColor = findColormap(this._data.colormap);
-    if (extentColor[0] !== undefined && extentColor[1] !== undefined) this.scaleColor.domain(extentColor);
+    this.data.forEach((d) => {
+      this.scaleColors[d.id] = findColormap(d.colormap);
+      if (extentColor[0] !== undefined && extentColor[1] !== undefined) {
+        this.scaleColors[d.id].domain(extentColor);
+      }
+    });
 
-    this._lines = this._data.data.map((pt, i, data) => (i === data.length - 1 ? [pt] : [pt, data[i + 1]]));
+    this._pointIDs = [];
+    this._points = [];
+    this._lineIDs = [];
+    this._lines = [];
+
+    this.data.forEach((d) => {
+      d.data.forEach((pt, i, a) => {
+        this._pointIDs.push([d.id, pt.id].join("-"));
+        this._points.push(pt);
+        this._lineIDs.push([d.id, pt.id, a[i + 1]?.id].join("-"));
+        this._lines.push(i === a.length - 1 ? [pt] : [pt, a[i + 1]]);
+      });
+    });
   }
 
   /** Initializes the elements for the line plot. */
@@ -124,6 +184,7 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       // Create the line plot elements.
       this.linesSel = this.contentSel.append("g").selectAll("line");
       this.pointsSel = this.contentSel.append("g").selectAll("circle");
+      this.labelsSel = this.contentSel.append("g").selectAll("text");
 
       this.setupAxisElements();
     }
@@ -139,8 +200,8 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
     } = createSvg(undefined, this.layout);
 
     // Get the bounds of the data.
-    const xExtent = d3.extent(this._data.data, ({ x }) => x);
-    const yExtent = d3.extent(this._data.data, ({ y }) => y);
+    const xExtent = this.extent(this.data, (d: ILinePoint) => d.x);
+    const yExtent = this.extent(this.data, (d: ILinePoint) => d.y);
 
     // Check for invalid bounds.
     if (xExtent[0] === undefined || xExtent[1] === undefined) return;
@@ -185,22 +246,27 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       this.svgSel.attr("viewBox", viewBox).attr("style", style);
     }
   }
-  public get data(): ILinePlotData<ILinePoint> {
-    return { ...super.data };
+  public get data(): ILinePlotData[] {
+    return super.data;
   }
-  public set data(value: ILinePlotData) {
-    super.data = value;
+  public set data(value: ILinePlotData | ILinePlotData[]) {
+    super.data = LinePlot.safeData(value);
     this.setupScales();
   }
   // #endregion
 
   /** Renders a plot of the graph. */
   public render() {
+    const dataID = (combined: string, id: string) => combined.substring(0, combined.lastIndexOf(id) - 1);
+    const dataIDFromPoint = (d: ILinePoint, i: number) => dataID(this._lineIDs[i], d.id);
+    const dataIDFromLine = (d: TLineSegment, i: number) => dataID(this._lineIDs[i], d.map((e) => e.id).join("-"));
+    const parentFromPoint = (d: ILinePoint, i: number) => this.data.find((e) => e.id === dataIDFromPoint(d, i));
+    const parentFromLine = (d: TLineSegment, i: number) => this.data.find((e) => e.id === dataIDFromLine(d, i));
     // Update the points.
     this.pointsSel = this.pointsSel
       ?.data(
-        this._data.data.filter((d) => d.style?.fillRadius ?? 0),
-        (d) => d.id
+        this._points.filter((d) => d.style?.fillRadius ?? 0),
+        (d, i) => this._pointIDs[i]
       )
       .join("circle")
       .on("click", (e: PointerEvent, d) => {
@@ -218,8 +284,12 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       .attr("cx", (d) => this.scaleX(d.x ?? 0))
       .attr("cy", (d) => this.scaleY(d.y ?? 0))
       .attr("r", (d) => d.style?.fillRadius ?? 0)
-      .attr("fill", (d) => (d.value !== undefined ? this.scaleColor(d.value) : d.style?.fillColor ?? "#53b853"))
-      .attr("stroke", (d) => (d.weight !== undefined ? this.scaleColor(d.weight) : d.style?.strokeColor ?? "none"))
+      .attr("fill", (d, i) =>
+        d.value !== undefined
+          ? this.scaleColors[dataIDFromPoint(d, i)](d.value)
+          : parentFromPoint(d, i)?.color ?? d.style?.fillColor ?? "#53b853"
+      )
+      .attr("stroke", (d) => d.style?.strokeColor ?? "none")
       .attr("stroke-width", (d) => d.style?.strokeWidth ?? 0);
 
     const connectLine = d3
@@ -229,13 +299,27 @@ class LinePlot extends PlotWithAxis<ILinePlotData, ILinePlotLayout, ILinePlotEve
       .y((d) => this.scaleY(d[1]));
 
     this.linesSel = this.linesSel
-      ?.data(this._lines)
+      ?.data(this._lines, (d, i) => this._lineIDs[i])
       .join("path")
       .attr("d", (d) => connectLine(d.map((e) => [e.x ?? 0, e.y ?? 0])))
-      .attr("stroke", (d) =>
-        d[0].value !== undefined ? this.scaleColor(d[0].value) : d[0].style?.strokeColor ?? "#53b853"
+      .attr("stroke", (d, i) =>
+        d[0].value !== undefined
+          ? this.scaleColors[dataIDFromLine(d, i)](d[0].value)
+          : parentFromLine(d, i)?.color ?? d[0].style?.strokeColor ?? "#53b853"
       )
       .attr("stroke-width", (d) => d[0].style?.strokeWidth ?? 1);
+
+    if (this.data.length > 1) {
+      this.labelsSel = this.labelsSel
+        ?.data(this.data, (d) => d.id)
+        .join("text")
+        .attr("x", (d) => this.scaleX(d.data[d.data.length - 1].x ?? 0))
+        .attr("y", (d) => this.scaleY(d.data[d.data.length - 1].y ?? 0))
+        .attr("alignment-baseline", "middle")
+        .attr("text-anchor", "end")
+        .attr("fill", (d) => d.color ?? null)
+        .text((d) => d.label ?? d.id ?? "");
+    }
   }
 }
 

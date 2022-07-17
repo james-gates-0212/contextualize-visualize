@@ -5,6 +5,12 @@ import { Selection } from "./Selection";
 
 type ScaleColor = d3.ScaleSequential<string> | d3.ScaleOrdinal<number, string>;
 
+/** Named or indexed Map for a scale color. */
+interface ScaleColors {
+  /** The mapped scale color. */
+  [key: string | number]: ScaleColor;
+}
+
 class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends EventDriver<TEvent> {
   // #region DOM
   protected _container?: HTMLElement;
@@ -20,6 +26,7 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
   protected _data: TData;
   protected _layout: TLayout;
   protected _scaleColor: ScaleColor;
+  protected _scaleColors: ScaleColors;
   // #endregion
 
   public constructor(data?: TData, layout?: TLayout, container?: HTMLElement) {
@@ -30,6 +37,7 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
     this._container = container;
 
     this._scaleColor = d3.scaleSequential();
+    this._scaleColors = {};
   }
 
   // #region the scales' Getters/Setters.
@@ -38,6 +46,12 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
   }
   protected get scaleColor(): ScaleColor {
     return this._scaleColor;
+  }
+  protected set scaleColors(value: ScaleColors) {
+    this._scaleColors = value;
+  }
+  protected get scaleColors(): ScaleColors {
+    return this._scaleColors;
   }
   // #endregion
 
@@ -55,7 +69,7 @@ class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends Event
     this._layout = value;
   }
   public get data(): TData {
-    return { ...this._data };
+    return this._data;
   }
   public set data(value: TData) {
     this._data = value;

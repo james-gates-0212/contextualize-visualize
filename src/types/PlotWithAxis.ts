@@ -71,7 +71,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
     super.layout = value;
   }
   public get data(): TData {
-    return { ...super.data };
+    return super.data;
   }
   public set data(value: TData) {
     super.data = value;
@@ -145,7 +145,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
       g?.attr("transform", `translate(0, ${size.height - margin.bottom})`)
         .call(d3.axisBottom(scale).tickSize(-(size.height - margin.top - margin.bottom)))
         .selectAll("line")
-        .attr("opacity", "0.5");
+        .attr("opacity", 0.25);
     }
   }
 
@@ -157,7 +157,7 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
       g?.attr("transform", `translate(${margin.left}, 0)`)
         .call(d3.axisLeft(scale).tickSize(-(size.width - margin.left - margin.right)))
         .selectAll("line")
-        .attr("opacity", "0.5");
+        .attr("opacity", 0.25);
     }
   }
 }
