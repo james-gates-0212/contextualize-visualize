@@ -112,31 +112,33 @@ MultipleNodes.args = {
   treeLayout: "none",
 };
 
+const hierarchyNodesData = {
+  vertices: [
+    { id: "1", label: "Grandparent" },
+    { id: "1-1", label: "Parent 1" },
+    { id: "1-2", label: "Parent 2" },
+    { id: "1-3", label: "Parent 3" },
+    { id: "1-1-1", label: "Child 1" },
+    { id: "1-1-2", label: "Child 2" },
+    { id: "1-1-3", label: "Child 3" },
+    { id: "1-3-1", label: "Child 1" },
+    { id: "1-3-2", label: "Child 2" },
+  ],
+  edges: [
+    { source: "1", target: "1-1", directed: true },
+    { source: "1", target: "1-2", directed: true },
+    { source: "1", target: "1-3", directed: true },
+    { source: "1-1", target: "1-1-1", directed: true },
+    { source: "1-1", target: "1-1-2", directed: true },
+    { source: "1-1", target: "1-1-3", directed: true },
+    { source: "1-2", target: "1-3-1", directed: true },
+    { source: "1-2", target: "1-3-2", directed: true },
+  ],
+};
+
 export const HierarchicalNodes = Template.bind({});
 HierarchicalNodes.args = {
-  data: {
-    vertices: [
-      { id: "1", label: "Grandparent" },
-      { id: "1-1", label: "Parent 1" },
-      { id: "1-2", label: "Parent 2" },
-      { id: "1-3", label: "Parent 3" },
-      { id: "1-1-1", label: "Child 1" },
-      { id: "1-1-2", label: "Child 2" },
-      { id: "1-1-3", label: "Child 3" },
-      { id: "1-3-1", label: "Child 1" },
-      { id: "1-3-2", label: "Child 2" },
-    ],
-    edges: [
-      { source: "1", target: "1-1", directed: true },
-      { source: "1", target: "1-2", directed: true },
-      { source: "1", target: "1-3", directed: true },
-      { source: "1-1", target: "1-1-1", directed: true },
-      { source: "1-1", target: "1-1-2", directed: true },
-      { source: "1-1", target: "1-1-3", directed: true },
-      { source: "1-2", target: "1-3-1", directed: true },
-      { source: "1-2", target: "1-3-2", directed: true },
-    ],
-  },
+  data: hierarchyNodesData,
   treeLayout: "none",
 };
 
@@ -187,6 +189,63 @@ TwoHubsOfNodes.args = {
 };
 
 let interval: NodeJS.Timer | undefined = undefined;
+
+const TreeLayoutTemplate: Story<IGraphPlot> = (args) => {
+  // Construct the container.
+  let container: HTMLDivElement;
+  container = document.createElement("div");
+  container.className = "plot-container";
+
+  // Set up the graph plot.
+  const { data, layout, forceNode, forceLink, forceCenter, treeLayout } = args;
+  const plot = new GraphPlot(data, layout, container);
+  if (forceNode) plot.forceNode = d3.forceManyBody().strength(-forceNode);
+  if (forceLink) {
+    plot.forceLink = d3
+      .forceLink<IGraphVertex, IGraphEdge>()
+      .id(({ id }) => id)
+      .strength(forceLink);
+  }
+  if (forceCenter) {
+    plot.forceX = d3.forceX(0).strength(forceCenter);
+    plot.forceY = d3.forceY(0).strength(forceCenter);
+  }
+  if (treeLayout) {
+    plot.treeLayout = treeLayout;
+  }
+  plot.render();
+
+  if (interval) {
+    clearInterval(interval);
+    interval = undefined;
+  }
+
+  const treeLayouts = [
+    "none",
+    "horizontal",
+    "vertical",
+    "radial",
+  ];
+
+  interval = setInterval(() => {
+    plot.treeLayout = treeLayouts.find((t, i, a) => a[(a.length + i - 1) % a.length] == plot.treeLayout) as TTreeLayout;
+    plot.simulate();
+    plot.render();
+  }, 5000);
+
+  return container;
+};
+
+export const TreeLayoutNodes = TreeLayoutTemplate.bind({});
+TreeLayoutNodes.args = {
+  data: hierarchyNodesData,
+  treeLayout: "none",
+  layout: {
+    transition: {
+      duration: 300,
+    },
+  },
+};
 
 const RealtimeTemplate: Story<IGraphPlot> = (args) => {
   // Construct the container.

@@ -59,7 +59,13 @@ interface IGraphPlotData {
 }
 
 /** Represents the layout information for the plot. */
-interface IGraphPlotLayout extends IPlotLayout<"graph"> {}
+interface IGraphPlotLayout extends IPlotLayout<"graph"> {
+  /** Transition infos for a layout. */
+  transition?: {
+    /** Transition period. */
+    duration?: number;
+  };
+}
 
 /** The events that may be emitted from a graph plot. */
 interface IGraphPlotEvents {
@@ -271,11 +277,17 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
   private setupSimulation() {
     if (this.svgSel) {
       const { size } = createSvg(undefined, this.layout);
-      this.svgSel.attr("viewBox",
-        this.isNoneTreeLayout() || this.isRadialTreeLayout()
-          ? [-size.width/2, -size.height/2, size.width, size.height]
-          : [0, 0, size.width, size.height]
-      );
+      this.svgSel
+        .transition()
+        .ease(d3.easeLinear)
+        .duration(this.transition().duration)
+        .attr("viewBox",
+          (
+            this.isNoneTreeLayout() || this.isRadialTreeLayout()
+              ? [-size.width/2, -size.height/2, size.width, size.height]
+              : [0, 0, size.width, size.height]
+          ).join(" ")
+        );
     }
     if (this.isNoneTreeLayout()) {
       // Set the data within the force simulation.
@@ -494,13 +506,21 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     return this._treeLayout === "horizontal";
   }
 
+  private transition() {
+    return {
+      duration: this.isNoneTreeLayout() ? 0 : 500,
+      ...this.layout.transition,
+    };
+  }
+
   private updateLinkSel() {
     // Update the link source and target positions.
     if (this.linkSel) {
       this.linkSel
         .transition()
         .ease(d3.easeLinear)
-        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .duration(this.transition().duration)
+        .attr("transform", "none")
         .attr("x1", ({ source }) => (source as IGraphVertex).x || 0)
         .attr("y1", ({ source }) => (source as IGraphVertex).y || 0)
         .attr("x2", ({ target }) => (target as IGraphVertex).x || 0)
@@ -514,7 +534,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       this.nodeSel
         .transition()
         .ease(d3.easeLinear)
-        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .duration(this.transition().duration)
+        .attr("transform", "none")
         .attr("cx", ({ x }) => x || 0)
         .attr("cy", ({ y }) => y || 0);
     }
@@ -527,7 +548,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
       this.textSel
         .transition()
         .ease(d3.easeLinear)
-        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .duration(this.transition().duration)
+        .attr("transform", "none")
         .attr("x", (d) => d.x || 0)
         .attr("y", (d) => (d.y || 0) + calcOffset((d as IGraphVertex).style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius));
     }
@@ -798,13 +820,6 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     this.forceExt.alpha(alpha).restart();
   }
 
-  private projectPoint(x: number, y: number) {
-    if (this.isRadialTreeLayout()) {
-      return [(y = +y) * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
-    }
-    return [x, y];
-  }
-
   /**
    * Renders a plot of the graph.
    * Should be called when data is updated.
@@ -815,8 +830,8 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
 
     this.linkSel = this.linkSel
       ?.data(links as IGraphEdge[], ({ source, target }) => [
-        (source as ITreeVertex).data?.id ?? source,
-        (target as ITreeVertex).data?.id ?? target,
+        (source as ITreeVertex).data?.id ?? (source as IGraphVertex).id ?? source,
+        (target as ITreeVertex).data?.id ?? (target as IGraphVertex).id ?? target,
       ].join("-"))
       .join("line")
 
@@ -831,7 +846,7 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
 
     // Update the nodes.
     this.nodeSel = this.nodeSel
-      ?.data(nodes, (d) => d.id ?? (d as ITreeVertex).data.id)
+      ?.data(nodes, (d) => (d as ITreeVertex).data?.id ?? d.id)
       .join("circle")
 
       // Styling is applied based on defaults and the styling passed along with the data.
@@ -844,14 +859,14 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
     // Update the selection.
     const selectedVertices = this._data.vertices.filter((d) => d.selected);
     this.selectSel = this.selectSel
-      ?.data(selectedVertices, (d) => d.id ?? (d as ITreeVertex).data.id)
+      ?.data(selectedVertices, (d) => (d as ITreeVertex).data?.id ?? d.id)
       .join("circle")
       .attr("r", (d) => (d.style?.fillRadius ?? (d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius) / 3)
       .attr("fill", "currentcolor");
 
     // Update the text.
     this.textSel = this.textSel
-      ?.data(nodes, (d) => d.id ?? (d as ITreeVertex).data.id)
+      ?.data(nodes, (d) => (d as ITreeVertex).data?.id ?? d.id)
       .join("text")
       .text(d => d.label ?? (d as ITreeVertex).data?.label ?? "")
       .attr("text-anchor", "middle");
@@ -870,53 +885,56 @@ class GraphPlot extends BasePlot<IGraphPlotData, IGraphPlotLayout, IGraphPlotEve
           }
         });
       this.tick();
-    } else {
+    } else if (this.isRadialTreeLayout()) {
+      // Update for radial tree layout.
+      const projectPoint = (x: number, y: number) => {
+        return [(y = +y) * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
+      };
+
       this.linkSel
         ?.transition()
         .ease(d3.easeLinear)
-        .duration(this.isNoneTreeLayout() ? 0 : 500)
+        .duration(this.transition().duration)
         .attr("fill", "none")
         .attr("transform", d => `translate(0, ${(d as ITreeEdge).offset?.y || 0})`)
-        .attr("x1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[0])
-        .attr("y1", d => this.projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[1])
-        .attr("x2", d => this.projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[0])
-        .attr("y2", d => this.projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[1]);
+        .attr("x1", d => projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[0])
+        .attr("y1", d => projectPoint((d as ITreeEdge).source.x, (d as ITreeEdge).source.y)[1])
+        .attr("x2", d => projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[0])
+        .attr("y2", d => projectPoint((d as ITreeEdge).target.x, (d as ITreeEdge).target.y)[1]);
 
-      // Update for tree layout.
-      if (this.isRadialTreeLayout()) {
-
-        this.nodeSel
-          ?.transition()
-          .ease(d3.easeLinear)
-          .duration(this.isNoneTreeLayout() ? 0 : 500)
-          .attr("transform", d => [
+      this.nodeSel
+        ?.transition()
+        .ease(d3.easeLinear)
+        .duration(this.transition().duration)
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("transform", d =>
+          [
             `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
             `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
             `translate(${d.y}, 0)`
           ].join(' '));
 
-        const calcOffset = (r: number) => 5 + 2 * r;
+      const calcOffset = (r: number) => 5 + 2 * r;
 
-        this.textSel
-          ?.transition()
-          .ease(d3.easeLinear)
-          .duration(this.isNoneTreeLayout() ? 0 : 500)
-          .attr("x", 0).attr("y", 0)
-          .attr("transform", (d) => [
+      this.textSel
+        ?.transition()
+        .ease(d3.easeLinear)
+        .duration(this.transition().duration)
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("transform", (d) =>
+          [
             `translate(0, ${(d as ITreeVertex).data?.offset?.y || 0})`,
             `rotate(${(d.x ?? 0) * 180 / Math.PI - 90})`,
             `translate(${(d.y ?? 0)}, 0)`,
             `rotate(${-(d.x ?? 0) * 180 / Math.PI + 90})`,
             `translate(0, ${calcOffset((d as ITreeVertex).data?.style?.fillRadius ?? this._defaultRadius)})`,
-          ].join(' ')
-        );
-      }
-
-      if (!this.isRadialTreeLayout()) {
-        this.updateLinkSel();
-        this.updateNodeSel();
-        this.updateTextSel();
-      }
+          ].join(' '));
+    } else {
+      this.updateLinkSel();
+      this.updateNodeSel();
+      this.updateTextSel();
     }
   }
 }
