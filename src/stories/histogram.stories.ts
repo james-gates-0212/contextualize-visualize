@@ -29,7 +29,7 @@ const Template: Story<IHistogramPlot> = (args) => {
 };
 
 let data: IHistogramBin[] = [];
-for (let i = 0; i < 50; i++) {
+for (let i = 0; i < 48; i++) {
   data.push({
     frequency: i ** 2,
     min: i / 2,
@@ -51,9 +51,10 @@ HorizontalHistogram.args = {
     orientation: "horizontal",
     axes: {
       x: {
-        label: "Population by age",
+        label: "First 24 Hours",
       },
       y: {
+        label: "Number of patients",
         showLines: true,
       },
     },
@@ -69,10 +70,11 @@ VerticalHistogram.args = {
     orientation: "vertical",
     axes: {
       x: {
+        label: "Number of patients",
         showLines: true,
       },
       y: {
-        label: "Population by age",
+        label: "First 24 Hours",
       },
     },
   },
@@ -242,11 +244,11 @@ CustomVerticalHistogram.args = {
 data = [];
 let prevPos: number = 0;
 for (let i = 0; i < 10; i++) {
-  const d = Math.round(Math.random() ** 2 * 111);
+  const d = Math.random() * 20;
   data.push({
-    frequency: Math.random() * 10,
+    frequency: Math.round(Math.random() ** 2 * 1111),
     min: prevPos,
-    max: prevPos + d,
+    max: prevPos + d > 100 ? 100 : prevPos + d,
     style: {
       fillColor: `rgba(0,180,255,.5)`,
       fillRadius: 5,
@@ -265,11 +267,12 @@ RandomHorizontalHistogram.args = {
   layout: {
     orientation: "horizontal",
     axes: {
-      y: {
-        showLines: true,
-      },
       x: {
-        label: "Random Histogram",
+        label: "Scores",
+      },
+      y: {
+        label: "Number Of Students",
+        showLines: true,
       },
     },
   },
@@ -284,10 +287,11 @@ RandomVerticalHistogram.args = {
     orientation: "vertical",
     axes: {
       x: {
+        label: "Number Of Students",
         showLines: true,
       },
       y: {
-        label: "Random Histogram",
+        label: "Scores",
       },
     },
   },
@@ -320,8 +324,8 @@ for (let i = 0; i < 100; i++) {
   });
 }
 
-export const ColorHistogram = Template.bind({});
-ColorHistogram.args = {
+export const OverlappingHistogram = Template.bind({});
+OverlappingHistogram.args = {
   data: {
     data: data,
   },
@@ -349,15 +353,7 @@ const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
   container.className = "plot-container";
 
   // Set up the Histogram plot.
-  const layout: IHistogramPlotLayout = {
-    orientation: "horizontal",
-    axes: {
-      y: {
-        showLines: true,
-      },
-    },
-  };
-
+  const { layout } = args;
   const data: IHistogramPlotData = {
     data: Array(20)
       .fill(null)
@@ -402,4 +398,17 @@ const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
 };
 
 export const RealtimeHistogram = RealtimeTemplate.bind({});
-RealtimeTemplate.args = {};
+RealtimeHistogram.args = {
+  layout: {
+    orientation: "horizontal",
+    axes: {
+      x: {
+        label: "Real Time Trading Revenue($)",
+      },
+      y: {
+        label: "Number Of People",
+        showLines: true,
+      },
+    },
+  },
+};

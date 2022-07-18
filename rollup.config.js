@@ -22,13 +22,7 @@ export default [
         sourcemap: true,
       },
     ],
-    plugins: [
-      peerdeps(),
-      resolve(),
-      commonjs(),
-      typescript({ tsconfig: "./tsconfig.json" }),
-      terser(),
-    ],
+    plugins: [peerdeps(), resolve(), commonjs(), typescript({ tsconfig: "./tsconfig.json" }), terser()],
   },
   {
     input: "dist/esm/types/index.d.ts",

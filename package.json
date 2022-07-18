@@ -50,6 +50,7 @@
     "babel-loader": "^8.2.5",
     "jest": "^28.1.2",
     "jest-environment-jsdom": "^28.1.2",
+    "prettier": "2.7.1",
     "rollup": "^2.75.7",
     "rollup-plugin-dts": "^4.2.2",
     "rollup-plugin-peer-deps-external": "^2.2.4",

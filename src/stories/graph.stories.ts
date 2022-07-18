@@ -1,13 +1,6 @@
 import * as d3 from "d3";
 import { Story, Meta } from "@storybook/html";
-import {
-  GraphPlot,
-  IGraphEdge,
-  IGraphPlotData,
-  IGraphPlotLayout,
-  IGraphVertex,
-  TTreeLayout,
-} from "plots";
+import { GraphPlot, IGraphEdge, IGraphPlotData, IGraphPlotLayout, IGraphVertex, TTreeLayout } from "plots";
 import "./plots.css";
 
 interface IGraphPlot {
@@ -223,9 +216,7 @@ const TreeLayoutTemplate: Story<IGraphPlot> = (args) => {
   const treeLayouts = ["none", "horizontal", "vertical", "radial"];
 
   interval = setInterval(() => {
-    plot.treeLayout = treeLayouts.find(
-      (t, i, a) => a[(a.length + i - 1) % a.length] == plot.treeLayout
-    ) as TTreeLayout;
+    plot.treeLayout = treeLayouts.find((t, i, a) => a[(a.length + i - 1) % a.length] == plot.treeLayout) as TTreeLayout;
     plot.simulate();
     plot.render();
   }, 5000);
