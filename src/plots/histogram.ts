@@ -72,7 +72,6 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
     // Perform setup tasks.
     this.setupElements();
-    this.setupEvents();
     this.setupScales();
   }
 
@@ -148,17 +147,6 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
     }
   }
 
-  /** Bind the events for the elements. */
-  private setupEvents() {
-    this.on("singleClickBin", (bin) => {
-      bin.selected = !bin.selected;
-      this.render();
-    }).on("clickSpace", () => {
-      this._data.data.forEach((bin) => (bin.selected = false));
-      this.render();
-    });
-  }
-
   // #region Plot Getters/Setters
   public get container(): HTMLElement | undefined {
     return super.container;
@@ -223,13 +211,17 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
     const onClickBin = (e: PointerEvent, bin: IHistogramBin) => {
       switch (e.detail) {
-        case 1: {
+        case 1:
           e.stopPropagation();
           this.notify("singleClickBin", bin);
           break;
-        }
+        case 2:
+          this.notify("doubleClickBin", bin);
+          break;
       }
     };
+
+    const includeSelected = !!this.data.data.find((d) => d.selected);
 
     // Update the bins.
     this.rectsSel = this.rectsSel
@@ -243,6 +235,7 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .attr("y", y)
       .attr("width", width)
       .attr("height", height)
+      .attr("opacity", (d) => `${!includeSelected || d.selected ? 100 : 50}%`)
       .on("click", onClickBin);
 
     this.rectsSel?.selectAll("title").remove();

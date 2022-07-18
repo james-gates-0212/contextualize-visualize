@@ -22,7 +22,15 @@ const Template: Story<IDonutPlot> = (args) => {
   const { data, layout } = args;
 
   const plot = new DonutPlot(data, layout, container);
-
+  plot
+    .on("singleClickBin", (bin) => {
+      bin.data.selected = !bin.data.selected;
+      plot.render();
+    })
+    .on("clickSpace", () => {
+      plot.data.data.map((d) => (d.selected = false));
+      plot.render();
+    });
   plot.render();
 
   return container;
@@ -238,7 +246,15 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
     })),
   };
   const plot = new DonutPlot(data, layout, container);
-
+  plot
+    .on("singleClickBin", (bin) => {
+      bin.data.selected = !bin.data.selected;
+      plot.render();
+    })
+    .on("clickSpace", () => {
+      plot.data.data.map((d) => (d.selected = false));
+      plot.render();
+    });
   plot.render();
 
   let values: number[];

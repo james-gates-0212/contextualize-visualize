@@ -22,7 +22,15 @@ const Template: Story<IHistogramPlot> = (args) => {
   const { data, layout } = args;
 
   const plot = new HistogramPlot(data, layout, container);
-
+  plot
+    .on("singleClickBin", (bin) => {
+      bin.selected = !bin.selected;
+      plot.render();
+    })
+    .on("clickSpace", () => {
+      plot.data.data.map((d) => (d.selected = false));
+      plot.render();
+    });
   plot.render();
 
   return container;
@@ -364,7 +372,15 @@ const RealtimeTemplate: Story<IHistogramPlot> = (args) => {
       })),
   };
   const plot = new HistogramPlot(data, layout, container);
-
+  plot
+    .on("singleClickBin", (bin) => {
+      bin.selected = !bin.selected;
+      plot.render();
+    })
+    .on("clickSpace", () => {
+      plot.data.data.map((d) => (d.selected = false));
+      plot.render();
+    });
   plot.render();
 
   let frequencies: number[];
