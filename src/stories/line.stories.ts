@@ -212,6 +212,7 @@ const RealtimeTemplate: Story<ILinePlot> = (args) => {
     clearInterval(interval);
     interval = undefined;
   }
+  const limitPoints = 500;
   const addNewPoint = (data: ILinePlotData) => {
     const length = data.data.length;
     const datum = data.data[length - 1];
@@ -220,6 +221,9 @@ const RealtimeTemplate: Story<ILinePlot> = (args) => {
     const n = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     const x = datum.x! + 1;
     const y = datum.y! + n;
+    if (data.data.length >= limitPoints) {
+      data.data.shift();
+    }
     data.data.push({ id: `${length}`, x, y });
   };
   interval = setInterval(() => {
@@ -262,6 +266,7 @@ const MarketTemplate: Story<ILinePlot> = (args) => {
     clearInterval(interval);
     interval = undefined;
   }
+  const limitPoints = 500;
   interval = setInterval(() => {
     const length = data.data.length;
     const datum = data.data[length - 1];
@@ -270,6 +275,9 @@ const MarketTemplate: Story<ILinePlot> = (args) => {
     const n = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
     const x = datum.x! + 1;
     const y = datum.y! + n;
+    if (data.data.length >= limitPoints) {
+      data.data.shift();
+    }
     data.data.push({ id: `${length}`, x, y, value: y });
 
     plot.data = data;
