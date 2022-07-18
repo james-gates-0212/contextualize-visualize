@@ -28,7 +28,7 @@ const Template: Story<IDonutPlot> = (args) => {
       plot.render();
     })
     .on("clickSpace", () => {
-      plot.data.data.map((d) => (d.selected = false));
+      plot.data.data.forEach((d) => (d.selected = false));
       plot.render();
     });
   plot.render();
@@ -252,7 +252,7 @@ const RealtimeTemplate: Story<IDonutPlot> = (args) => {
       plot.render();
     })
     .on("clickSpace", () => {
-      plot.data.data.map((d) => (d.selected = false));
+      plot.data.data.forEach((d) => (d.selected = false));
       plot.render();
     });
   plot.render();
