@@ -76,7 +76,10 @@ class EventDriver<T> {
    * @param event The type of event.
    * @param args The arguments to pass to the event listeners.
    */
-  public notify<K extends EventKey<T>>(event: K, ...args: EventListenerIn<T[K]>) {
+  public notify<K extends EventKey<T>>(
+    event: K,
+    ...args: EventListenerIn<T[K]>
+  ) {
     this.ensureListenersReady(event);
     this.listeners[event]!.forEach((entry) => {
       entry.listener(...args);

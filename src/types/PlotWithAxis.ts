@@ -7,7 +7,11 @@ import { Selection } from "./Selection";
 type AxisSel = Selection<SVGGElement, unknown, HTMLElement>;
 type AxisScale = d3.ScaleLinear<number, number>;
 
-class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends BasePlot<TData, TLayout, TEvent> {
+class PlotWithAxis<
+  TData,
+  TLayout extends IPlotLayout<string>,
+  TEvent
+> extends BasePlot<TData, TLayout, TEvent> {
   // #region DOM
   protected xAxisSel?: AxisSel;
   protected yAxisSel?: AxisSel;
@@ -103,7 +107,10 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
       // Add y axis label
       this.svgSel
         .append("text")
-        .attr("x", -(margin.top + (size.height - margin.top - margin.bottom) / 2))
+        .attr(
+          "x",
+          -(margin.top + (size.height - margin.top - margin.bottom) / 2)
+        )
         .attr("y", margin.right)
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
@@ -128,13 +135,17 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
   /** Creates an x-axis for the plot. */
   protected xAxis(g: AxisSel | undefined, scale: AxisScale) {
     const { size, margin } = createSvg(undefined, this._layout);
-    g?.attr("transform", `translate(0, ${size.height - margin.bottom})`).call(d3.axisBottom(scale));
+    g?.attr("transform", `translate(0, ${size.height - margin.bottom})`).call(
+      d3.axisBottom(scale)
+    );
   }
 
   /** Creates an y-axis for the plot. */
   protected yAxis(g: AxisSel | undefined, scale: AxisScale) {
     const { margin } = createSvg(undefined, this._layout);
-    g?.attr("transform", `translate(${margin.left}, 0)`).call(d3.axisLeft(scale));
+    g?.attr("transform", `translate(${margin.left}, 0)`).call(
+      d3.axisLeft(scale)
+    );
   }
 
   /** Creates an x-axis grid for the plot. */
@@ -143,7 +154,11 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
     const activeXAxisGrid = this._layout.axes?.x?.showLines;
     if (activeXAxisGrid) {
       g?.attr("transform", `translate(0, ${size.height - margin.bottom})`)
-        .call(d3.axisBottom(scale).tickSize(-(size.height - margin.top - margin.bottom)))
+        .call(
+          d3
+            .axisBottom(scale)
+            .tickSize(-(size.height - margin.top - margin.bottom))
+        )
         .selectAll("line")
         .attr("opacity", 0.25);
     }
@@ -155,7 +170,11 @@ class PlotWithAxis<TData, TLayout extends IPlotLayout<string>, TEvent> extends B
     const activeYAxisGrid = this._layout.axes?.y?.showLines;
     if (activeYAxisGrid) {
       g?.attr("transform", `translate(${margin.left}, 0)`)
-        .call(d3.axisLeft(scale).tickSize(-(size.width - margin.left - margin.right)))
+        .call(
+          d3
+            .axisLeft(scale)
+            .tickSize(-(size.width - margin.left - margin.right))
+        )
         .selectAll("line")
         .attr("opacity", 0.25);
     }

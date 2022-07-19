@@ -1,5 +1,10 @@
 import { Story, Meta } from "@storybook/html";
-import { IHistogramBin, IHistogramPlotData, IHistogramPlotLayout, HistogramPlot } from "plots";
+import {
+  IHistogramBin,
+  IHistogramPlotData,
+  IHistogramPlotLayout,
+  HistogramPlot,
+} from "plots";
 
 interface IHistogramPlot {
   /** The data to supply the Histogram plot. */

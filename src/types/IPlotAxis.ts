@@ -1,3 +1,5 @@
+import { IPlotStyle } from "./IPlotStyle";
+
 /** Represents a particular axis on a plot. */
 interface IPlotAxis {
   /** The label for the axis. */
@@ -9,6 +11,9 @@ interface IPlotAxis {
   minimum?: number;
   /** The maximum value of the axis. If not specified, defaults to the maximum extent of the data. */
   maximum?: number;
+
+  /** The style of the axis. */
+  style?: IPlotStyle;
 }
 
 export type { IPlotAxis };

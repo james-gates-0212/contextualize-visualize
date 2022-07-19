@@ -1,10 +1,1 @@
-{
-  "filepath": "*.*",
-  "printWidth": 120,
-  "proseWrap": "preserve",
-  "singleAttributePerLine": true,
-  "singleQuote": false,
-  "tabWidth": 2,
-  "trailingComma": "es5",
-  "useTabs": false
-}
+{}

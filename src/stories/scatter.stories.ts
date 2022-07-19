@@ -1,5 +1,10 @@
 import { Story, Meta } from "@storybook/html";
-import { ScatterPlot2d, IScatterPoint2d, IScatterPlotData, IScatterPlotLayout } from "plots";
+import {
+  ScatterPlot2d,
+  IScatterPoint2d,
+  IScatterPlotData,
+  IScatterPlotLayout,
+} from "plots";
 
 interface IScatterPlot {
   /** The data to supply the scatter plot. */

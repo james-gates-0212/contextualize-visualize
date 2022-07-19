@@ -59,7 +59,11 @@ interface IExtents {
 /**
  * An object that persists, renders, and handles information about a line plot in 2D.
  */
-class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotEvents> {
+class LinePlot extends PlotWithAxis<
+  ILinePlotData[],
+  ILinePlotLayout,
+  ILinePlotEvents
+> {
   // #region DOM
   private pointsSel?: Selection<SVGGElement, ILinePoint, SVGGElement>;
   private linesSel?: Selection<SVGGElement, TLineSegment, SVGGElement>;
@@ -79,7 +83,11 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(data?: ILinePlotData | ILinePlotData[], layout?: ILinePlotLayout, container?: HTMLElement) {
+  public constructor(
+    data?: ILinePlotData | ILinePlotData[],
+    layout?: ILinePlotLayout,
+    container?: HTMLElement
+  ) {
     super(LinePlot.safeData(data), layout, container);
 
     // Set the data.
@@ -112,11 +120,9 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
    * @returns The min and max simultaneously.
    */
   private extent(data: ILinePlotData[], cb: Function) {
-    const numbers: number[] = [];
+    let numbers: number[] = [];
     data.forEach((e) => {
-      e.data.forEach((d) => {
-        numbers.push(cb(d));
-      });
+      numbers = numbers.concat(...e.data.map((d) => cb(d)));
     });
     return d3.extent(numbers);
   }
@@ -134,11 +140,17 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
     // Create the scalars for the data.
     this.scaleX = d3
       .scaleLinear()
-      .domain([this.layout.axes?.x?.minimum ?? extentX[0] ?? 0, this.layout.axes?.x?.maximum ?? extentX[1] ?? 1])
+      .domain([
+        this.layout.axes?.x?.minimum ?? extentX[0] ?? 0,
+        this.layout.axes?.x?.maximum ?? extentX[1] ?? 1,
+      ])
       .range([margin.left, size.width - margin.right]);
     this.scaleY = d3
       .scaleLinear()
-      .domain([this.layout.axes?.y?.minimum ?? extentY[0] ?? 0, this.layout.axes?.y?.maximum ?? extentY[1] ?? 1])
+      .domain([
+        this.layout.axes?.y?.minimum ?? extentY[0] ?? 0,
+        this.layout.axes?.y?.maximum ?? extentY[1] ?? 1,
+      ])
       .range([size.height - margin.bottom, margin.top]);
 
     this.data.forEach((d) => {
@@ -178,7 +190,9 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
 
       // Setup the zoom behavior.
       if (this.zoomExt) {
-        this.svgSel.call(this.zoomExt).call(this.zoomExt.transform, d3.zoomIdentity);
+        this.svgSel
+          .call(this.zoomExt)
+          .call(this.zoomExt.transform, d3.zoomIdentity);
       }
 
       // Create the line plot elements.
@@ -218,7 +232,10 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
         .call(
           this.zoomExt.transform as any,
           d3.zoomIdentity
-            .scale((1 + padding) * Math.max((xMax - xMin) / width, (yMax - yMin) / height))
+            .scale(
+              (1 + padding) *
+                Math.max((xMax - xMin) / width, (yMax - yMin) / height)
+            )
             .translate(-(xMin + xMax) / 2, -(yMin + yMax) / 2)
         );
     }
@@ -257,11 +274,16 @@ class LinePlot extends PlotWithAxis<ILinePlotData[], ILinePlotLayout, ILinePlotE
 
   /** Renders a plot of the graph. */
   public render() {
-    const dataID = (combined: string, id: string) => combined.substring(0, combined.lastIndexOf(id) - 1);
-    const dataIDFromPoint = (d: ILinePoint, i: number) => dataID(this._pointIDs[i], d.id);
-    const dataIDFromLine = (d: TLineSegment, i: number) => dataID(this._lineIDs[i], d.map((e) => e.id).join("-"));
-    const parentFromPoint = (d: ILinePoint, i: number) => this.data.find((e) => e.id === dataIDFromPoint(d, i));
-    const parentFromLine = (d: TLineSegment, i: number) => this.data.find((e) => e.id === dataIDFromLine(d, i));
+    const dataID = (combined: string, id: string) =>
+      combined.substring(0, combined.lastIndexOf(id) - 1);
+    const dataIDFromPoint = (d: ILinePoint, i: number) =>
+      dataID(this._pointIDs[i], d.id);
+    const dataIDFromLine = (d: TLineSegment, i: number) =>
+      dataID(this._lineIDs[i], d.map((e) => e.id).join("-"));
+    const parentFromPoint = (d: ILinePoint, i: number) =>
+      this.data.find((e) => e.id === dataIDFromPoint(d, i));
+    const parentFromLine = (d: TLineSegment, i: number) =>
+      this.data.find((e) => e.id === dataIDFromLine(d, i));
     // Update the points.
     this.pointsSel = this.pointsSel
       ?.data(

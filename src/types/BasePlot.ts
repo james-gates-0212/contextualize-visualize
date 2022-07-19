@@ -11,7 +11,11 @@ interface ScaleColors {
   [key: string | number]: ScaleColor;
 }
 
-class BasePlot<TData, TLayout extends IPlotLayout<string>, TEvent> extends EventDriver<TEvent> {
+class BasePlot<
+  TData,
+  TLayout extends IPlotLayout<string>,
+  TEvent
+> extends EventDriver<TEvent> {
   // #region DOM
   protected _container?: HTMLElement;
   protected svgSel?: Selection<SVGSVGElement, unknown, HTMLElement>;

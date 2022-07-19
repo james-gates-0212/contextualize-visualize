@@ -2,7 +2,7 @@ import * as d3 from "d3";
 import { IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
 import { createSvg } from "utility";
 
-/** The type of datum for each histogram plot point. */
+/** The type of datum for each histogram plot bin. */
 interface IHistogramBin {
   /** The relative frequency of the histogram bin. */
   frequency: number;
@@ -48,7 +48,11 @@ interface IHistogramPlotEvents {
 /**
  * An object that persists, renders, and handles information about a histogram plot in 2D.
  */
-class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayout, IHistogramPlotEvents> {
+class HistogramPlot extends PlotWithAxis<
+  IHistogramPlotData,
+  IHistogramPlotLayout,
+  IHistogramPlotEvents
+> {
   // #region DOM
   private rectsSel?: Selection<SVGGElement, IHistogramBin, SVGGElement>;
   private freqsSel?: Selection<SVGGElement, IHistogramBin, SVGGElement>;
@@ -60,7 +64,11 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(data?: IHistogramPlotData, layout?: IHistogramPlotLayout, container?: HTMLElement) {
+  public constructor(
+    data?: IHistogramPlotData,
+    layout?: IHistogramPlotLayout,
+    container?: HTMLElement
+  ) {
     super(data, layout, container);
 
     // Set the data.
@@ -85,7 +93,9 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
   /** Calculate a total to normalize. */
   private total2Normalize() {
-    return this.layout.normalize ? d3.sum(this.data.data, (d) => d.frequency) : 1;
+    return this.layout.normalize
+      ? d3.sum(this.data.data, (d) => d.frequency)
+      : 1;
   }
 
   /** Initializes the scales used to transform data for the histogram plot. */
@@ -140,7 +150,10 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       this.contentSel = this.svgSel.append("g");
 
       // Create the histogram plot elements.
-      this.rectsSel = this.contentSel.append("g").style("cursor", "pointer").selectAll("rect");
+      this.rectsSel = this.contentSel
+        .append("g")
+        .style("cursor", "pointer")
+        .selectAll("rect");
       this.freqsSel = this.contentSel.append("g").selectAll("text");
 
       this.setupAxisElements();
@@ -189,14 +202,19 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
     const strokeWidth = (d: IHistogramBin) => d.style?.strokeWidth ?? 0;
 
     const x = (d: IHistogramBin) =>
-      (this.isHorizontal() ? scaleValues(d.min) + 1 : scaleValues(0)) + strokeWidth(d) / 2;
+      (this.isHorizontal() ? scaleValues(d.min) + 1 : scaleValues(0)) +
+      strokeWidth(d) / 2;
 
     const y = (d: IHistogramBin) =>
-      (this.isHorizontal() ? scaleFreq(frequency(d)) : scaleFreq(d.max) + 1) + strokeWidth(d) / 2;
+      (this.isHorizontal() ? scaleFreq(frequency(d)) : scaleFreq(d.max) + 1) +
+      strokeWidth(d) / 2;
 
     const width = (d: IHistogramBin) =>
       this.isHorizontal()
-        ? Math.max(1, scaleValues(d.max) - scaleValues(d.min) - strokeWidth(d) - 1)
+        ? Math.max(
+            1,
+            scaleValues(d.max) - scaleValues(d.min) - strokeWidth(d) - 1
+          )
         : scaleValues(frequency(d)) - scaleValues(0) - strokeWidth(d);
 
     const height = (d: IHistogramBin) =>
@@ -206,8 +224,10 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 
     const offset = "1em";
 
-    const topX = (d: IHistogramBin) => x(d) + width(d) / (this.isHorizontal() ? 2 : 1);
-    const topY = (d: IHistogramBin) => y(d) + (this.isHorizontal() ? 0 : height(d) / 2);
+    const topX = (d: IHistogramBin) =>
+      x(d) + width(d) / (this.isHorizontal() ? 2 : 1);
+    const topY = (d: IHistogramBin) =>
+      y(d) + (this.isHorizontal() ? 0 : height(d) / 2);
 
     const onClickBin = (e: PointerEvent, bin: IHistogramBin) => {
       switch (e.detail) {
@@ -244,8 +264,14 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
       .text((d) =>
         [
           `${d.min} ≤ x < ${d.max}`,
-          `${this.layout.normalize ? "Normalized: " : ""}${d3.format(",")(frequency(d))}`,
-          `${this.layout.normalize ? "Original: " + d3.format(",")(d.frequency) : ""}`,
+          `${this.layout.normalize ? "Normalized: " : ""}${d3.format(",")(
+            frequency(d)
+          )}`,
+          `${
+            this.layout.normalize
+              ? "Original: " + d3.format(",")(d.frequency)
+              : ""
+          }`,
         ]
           .join("\n")
           .trim()
@@ -266,4 +292,9 @@ class HistogramPlot extends PlotWithAxis<IHistogramPlotData, IHistogramPlotLayou
 }
 
 export default HistogramPlot;
-export type { IHistogramBin, IHistogramPlotData, IHistogramPlotLayout, IHistogramPlotEvents };
+export type {
+  IHistogramBin,
+  IHistogramPlotData,
+  IHistogramPlotLayout,
+  IHistogramPlotEvents,
+};

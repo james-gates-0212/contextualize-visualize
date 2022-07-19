@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { BasePlot, IPlotLayout, IPlotStyle, PlotWithAxis, Selection } from "types";
+import { BasePlot, IPlotLayout, IPlotStyle, Selection } from "types";
 import { createSvg, findColormap } from "utility";
 
 /** The type of datum for each donut plot point. */
@@ -48,12 +48,36 @@ interface IDonutPlotEvents {
 /**
  * An object that persists, renders, and handles information about a donut plot in 2D.
  */
-class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEvents> {
+class DonutPlot extends BasePlot<
+  IDonutPlotData,
+  IDonutPlotLayout,
+  IDonutPlotEvents
+> {
   // #region DOM
-  private arcsSel?: Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
-  private labelsSel?: Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
-  private valuesSel?: Selection<SVGGElement, d3.PieArcDatum<IDonutBin>, SVGGElement, IDonutBin[]>;
-  private layoutLabel?: Selection<SVGGElement, string, SVGGElement, IDonutBin[]>;
+  private arcsSel?: Selection<
+    SVGGElement,
+    d3.PieArcDatum<IDonutBin>,
+    SVGGElement,
+    IDonutBin[]
+  >;
+  private labelsSel?: Selection<
+    SVGGElement,
+    d3.PieArcDatum<IDonutBin>,
+    SVGGElement,
+    IDonutBin[]
+  >;
+  private valuesSel?: Selection<
+    SVGGElement,
+    d3.PieArcDatum<IDonutBin>,
+    SVGGElement,
+    IDonutBin[]
+  >;
+  private layoutLabel?: Selection<
+    SVGGElement,
+    string,
+    SVGGElement,
+    IDonutBin[]
+  >;
   // #endregion
 
   // #region Data
@@ -66,7 +90,11 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
    * @param layout Layout information to be used. Optional.
    * @param container THe container to hold the plot. Optional.
    */
-  public constructor(data?: IDonutPlotData, layout?: IDonutPlotLayout, container?: HTMLElement) {
+  public constructor(
+    data?: IDonutPlotData,
+    layout?: IDonutPlotLayout,
+    container?: HTMLElement
+  ) {
     super(data, layout, container);
 
     // Set the data.
@@ -104,7 +132,12 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       const { svg, size } = createSvg(this.container, this.layout);
 
       this.svgSel = svg
-        .attr("viewBox", [-size.width / 2, -size.height / 2, size.width, size.height])
+        .attr("viewBox", [
+          -size.width / 2,
+          -size.height / 2,
+          size.width,
+          size.height,
+        ])
         .on("click", (e: PointerEvent) => {
           if (e.detail === 1) {
             this.notify("clickSpace");
@@ -114,9 +147,21 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       this.contentSel = this.svgSel.append("g");
 
       // Create the donut plot elements.
-      this.arcsSel = this.contentSel.append("g").style("cursor", "pointer").datum(this._data.data).selectAll("path");
-      this.labelsSel = this.contentSel.append("g").style("cursor", "pointer").datum(this._data.data).selectAll("text");
-      this.valuesSel = this.contentSel.append("g").style("cursor", "pointer").datum(this._data.data).selectAll("text");
+      this.arcsSel = this.contentSel
+        .append("g")
+        .style("cursor", "pointer")
+        .datum(this._data.data)
+        .selectAll("path");
+      this.labelsSel = this.contentSel
+        .append("g")
+        .style("cursor", "pointer")
+        .datum(this._data.data)
+        .selectAll("text");
+      this.valuesSel = this.contentSel
+        .append("g")
+        .style("cursor", "pointer")
+        .datum(this._data.data)
+        .selectAll("text");
       this.layoutLabel = this.contentSel.append("g").selectAll("text");
 
       if (this._layout.label) {
@@ -174,7 +219,8 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     const gapLabel = 15;
 
     const calcInnerRadius = (d: d3.PieArcDatum<IDonutBin>) => innerRadius;
-    const calcOuterRadius = (d: d3.PieArcDatum<IDonutBin>) => (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
+    const calcOuterRadius = (d: d3.PieArcDatum<IDonutBin>) =>
+      (d.data.style?.fillRadius ?? outerRadius) + innerRadius;
 
     const pie = d3
       .pie<IDonutBin>()
@@ -214,18 +260,26 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
     this.arcsSel = this.arcsSel
       ?.data(pie)
       .join("path")
-      .attr("fill", (d, i, a) => d.data.style?.fillColor ?? this.scaleColor(i / a.length))
+      .attr(
+        "fill",
+        (d, i, a) => d.data.style?.fillColor ?? this.scaleColor(i / a.length)
+      )
       .attr("stroke", (d) => d.data.style?.strokeColor ?? "currentColor")
       .attr("stroke-width", (d) => d.data.style?.strokeWidth ?? 0)
-      .attr("opacity", (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`)
+      .attr(
+        "opacity",
+        (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`
+      )
       .attr("d", arc)
       .on("click", onClickBin);
 
     const need2Flip = (d: d3.PieArcDatum<IDonutBin>) =>
-      d.startAngle + d.endAngle > Math.PI && d.startAngle + d.endAngle < Math.PI * 3;
+      d.startAngle + d.endAngle > Math.PI &&
+      d.startAngle + d.endAngle < Math.PI * 3;
 
     const arcRotate = (d: d3.PieArcDatum<IDonutBin>) =>
-      (((d.startAngle + d.endAngle) / 2) * 180) / Math.PI + (need2Flip(d) ? 180 : 0);
+      (((d.startAngle + d.endAngle) / 2) * 180) / Math.PI +
+      (need2Flip(d) ? 180 : 0);
 
     this.labelsSel = this.labelsSel
       ?.data(pie)
@@ -233,11 +287,17 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
       .attr("transform", (d) =>
-        [`translate(${arcLabel.centroid(d)})`, this._layout.radialLabels ? `rotate(${arcRotate(d)})` : ""]
+        [
+          `translate(${arcLabel.centroid(d)})`,
+          this._layout.radialLabels ? `rotate(${arcRotate(d)})` : "",
+        ]
           .join(" ")
           .trim()
       )
-      .attr("opacity", (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`)
+      .attr(
+        "opacity",
+        (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`
+      )
       .text((d) => (d.data.value > 0 ? d.data.label ?? "" : ""))
       .on("click", onClickBin);
 
@@ -247,9 +307,17 @@ class DonutPlot extends BasePlot<IDonutPlotData, IDonutPlotLayout, IDonutPlotEve
       .attr("alignment-baseline", "middle")
       .attr("text-anchor", "middle")
       .attr("transform", (d) =>
-        [`translate(${arc.centroid(d)})`, this._layout.radialLabels ? `rotate(${arcRotate(d)})` : ""].join(" ").trim()
+        [
+          `translate(${arc.centroid(d)})`,
+          this._layout.radialLabels ? `rotate(${arcRotate(d)})` : "",
+        ]
+          .join(" ")
+          .trim()
       )
-      .attr("opacity", (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`)
+      .attr(
+        "opacity",
+        (d) => `${!includeSelected || d.data.selected ? 100 : 50}%`
+      )
       .text((d, i) => (d.data.value > 0 ? this._values[i] ?? "" : ""))
       .on("click", onClickBin);
   }
