@@ -1,3 +1,16 @@
+![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Fjames-gates-0212%2Fcontextualize-visualize)
+![GitHub forks](https://img.shields.io/github/forks/james-gates-0212/contextualize-visualize?style=flat)
+![GitHub Discussions](https://img.shields.io/github/discussions/james-gates-0212/contextualize-visualize)
+![GitHub Issues](https://img.shields.io/github/issues/james-gates-0212/contextualize-visualize)
+![GitHub License](https://img.shields.io/github/license/james-gates-0212/contextualize-visualize)
+![GitHub Repo stars](https://img.shields.io/github/stars/james-gates-0212/contextualize-visualize?style=flat)
+![GitHub top language](https://img.shields.io/github/languages/top/james-gates-0212/contextualize-visualize)
+![GitHub repo file or directory count](https://img.shields.io/github/directory-file-count/james-gates-0212/contextualize-visualize)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/james-gates-0212/contextualize-visualize)
+![GitHub repo size](https://img.shields.io/github/repo-size/james-gates-0212/contextualize-visualize)
+![GitHub Release](https://img.shields.io/github/v/release/james-gates-0212/contextualize-visualize)
+![GitHub Tag](https://img.shields.io/github/v/tag/james-gates-0212/contextualize-visualize)
+
 # Contextualize Visualization Library
 
 This project contains a Node.js library [Node.js](https://nodejs.org) that is used to generate common visualizations for data. The predominantly used packages are [D3](https://d3js.org/) and [Three.js](https://threejs.org/).
